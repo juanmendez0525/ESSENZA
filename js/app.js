@@ -48,9 +48,55 @@ function renderConfiguracion(){
   <div class="field"><label>Teléfono</label><input class="input" name="telefono" value="${c.telefono||""}"></div>
   <div class="field"><label>Dirección</label><input class="input" name="direccion" value="${c.direccion||""}"></div>
   </div><button class="primary-btn mt">Guardar cambios</button></form></div>
-  <div class="card mt"><h2>Datos del prototipo</h2><p class="small">Esta versión guarda la información en el navegador mediante localStorage. No es todavía una base de datos Android ni facturación electrónica DIAN.</p><button class="danger-btn mt" onclick="resetDemo()">Restablecer datos de demostración</button></div>`;
+  <div class="card mt">
+  <h2>Datos del prototipo</h2>
+  <p class="small">Esta versión guarda la información en el navegador mediante localStorage. No es todavía una base de datos Android ni facturación electrónica DIAN.</p>
+  <button class="danger-btn mt" onclick="resetDemo()">Restablecer datos de demostración</button>
+  </div>
+
+<div class="card mt">
+<h2>Sesión</h2>
+<p class="small">Cuenta actualmente conectada.</p>
+<button class="danger-btn mt" onclick="cerrarSesion()">🚪 Cerrar sesión</button>
+</div>`;
 }
 function resetDemo(){if(confirm("¿Restablecer todos los datos de demostración?")){localStorage.removeItem("makeupAppData");DB=loadData();cart=[];renderView("inicio");toast("Datos restaurados")}}
+async function cerrarSesion() {
+
+    const confirmar = confirm(
+        "¿Seguro que deseas cerrar sesión?"
+    );
+
+    if (!confirmar) {
+        return;
+    }
+
+    try {
+
+        const { error } =
+            await supabaseClient.auth.signOut();
+
+        if (error) {
+            console.error(
+                "Error cerrando sesión:",
+                error
+            );
+
+            toast("No se pudo cerrar sesión.");
+            return;
+        }
+
+        window.location.replace("login.html");
+
+    } catch (error) {
+
+        console.error(error);
+
+        toast(
+            "Ocurrió un error al cerrar sesión."
+        );
+    }
+}
 document.addEventListener("click",e=>{
   const b=e.target.closest("[data-view]");if(b){renderView(b.dataset.view);document.querySelector(".sidebar")?.classList.remove("open")}
 });
