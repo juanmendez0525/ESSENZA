@@ -117,12 +117,18 @@ loginForm.addEventListener('submit', async function(event) {
 
         if (errorPerfil || !perfil) {
 
-            await supabaseClient.auth.signOut();
-
-            mostrarMensaje(
-                'Este usuario no tiene un perfil configurado.'
+            console.error(
+                'ERROR REAL DEL PERFIL:',
+                errorPerfil
             );
-
+        
+            await supabaseClient.auth.signOut();
+        
+            mostrarMensaje(
+                'Error del perfil: ' +
+                (errorPerfil?.message || 'No se encontró el perfil.')
+            );
+        
             return;
         }
 
