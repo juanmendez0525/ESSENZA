@@ -9,14 +9,122 @@ function toast(msg){const r=document.getElementById("toastRoot");r.innerHTML=`<d
 function setActive(view){
   document.querySelectorAll("[data-view]").forEach(b=>b.classList.toggle("active",b.dataset.view===view));
 }
-function renderView(view="inicio"){
-  if(view==="mas")view="configuracion";
-  const [title,sub]=viewMeta[view]||viewMeta.inicio;
-  document.getElementById("pageTitle").textContent=title;document.getElementById("pageSubtitle").textContent=sub;setActive(view);
-  const root=document.getElementById("appView");
-  const renderers={inicio:renderInicio,ventas:renderVentas,inventario:renderInventario,apartados:renderApartados,clientes:renderClientes,reportes:renderReportes,configuracion:renderConfiguracion};
-  root.innerHTML=renderers[view]?renderers[view]():renderInicio();
+function renderView(view="inicio") {
+
+  // ==========================================
+  // CONTROL DE ACCESO POR ROL
+  // ==========================================
+
+  const rol = window.perfilActual?.rol;
+
+  // Si todavía no conocemos el usuario,
+  // no cargamos ninguna vista.
+  if (!rol) {
+    console.warn("Usuario todavía no autenticado.");
+    return;
+  }
+
+  // El empleado solamente puede acceder a:
+  // inicio, ventas, inventario y apartados.
+  const vistasEmpleado = [
+    "inicio",
+    "ventas",
+    "inventario",
+    "apartados"
+  ];
+
+  if (
+    rol === "empleado" &&
+    !vistasEmpleado.includes(view)
+  ) {
+    view = "inicio";
+  }
+
+  // "Más" solamente tiene sentido para móvil.
+  if (view === "mas") {
+
+    if (rol === "administrador") {
+      view = "configuracion";
+    } else {
+      view = "inicio";
+    }
+  }
+
+  const [title, sub] =
+    viewMeta[view] || viewMeta.inicio;
+
+  document.getElementById("pageTitle").textContent = title;
+  document.getElementById("pageSubtitle").textContent = sub;
+
+  setActive(view);
+
+  const root =
+    document.getElementById("appView");
+
+  const renderers = {
+    inicio: renderInicio,
+    ventas: renderVentas,
+    inventario: renderInventario,
+    apartados: renderApartados,
+    clientes: renderClientes,
+    reportes: renderReportes,
+    configuracion: renderConfiguracion
+  };
+
+  root.innerHTML =
+    renderers[view]
+      ? renderers[view]()
+      : renderInicio();
 }
+
+function configurarMenuPorRol() {
+
+  const rol = window.perfilActual?.rol;
+
+  if (!rol) {
+    return;
+  }
+
+  const vistasAdministrativas = [
+    "clientes",
+    "reportes",
+    "configuracion"
+  ];
+
+  document.querySelectorAll(
+    "#sideNav [data-view]"
+  ).forEach(button => {
+
+    const vista = button.dataset.view;
+
+    if (
+      rol === "empleado" &&
+      vistasAdministrativas.includes(vista)
+    ) {
+      button.style.display = "none";
+    }
+
+  });
+
+  // ==========================================
+  // BOTÓN "AGREGAR PRODUCTO"
+  // ==========================================
+
+  if (rol === "empleado") {
+
+    document
+      .querySelectorAll(
+        '[onclick="openProductModal()"]'
+      )
+      .forEach(button => {
+
+        button.style.display = "none";
+
+      });
+  }
+
+}
+
 function renderInicio(){
   const today=new Date().toISOString().slice(0,10), todaySales=DB.ventas.filter(v=>v.fecha===today), sales=todaySales.reduce((s,v)=>s+v.total,0);
   const low=DB.productos.filter(p=>p.stock<=p.stockMinimo);
@@ -103,4 +211,13 @@ document.addEventListener("click",e=>{
 document.getElementById("menuBtn").onclick=()=>document.querySelector(".sidebar").classList.toggle("open");
 document.getElementById("backupBtn").onclick=()=>{const blob=new Blob([JSON.stringify(DB,null,2)],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="respaldo-maquillaje.json";a.click();URL.revokeObjectURL(a.href);toast("Copia creada")};
 document.addEventListener("submit",e=>{if(e.target.id==="settingsForm"){e.preventDefault();DB.configuracion=Object.fromEntries(new FormData(e.target));saveData();toast("Configuración guardada")}})
-renderView("inicio");
+document.addEventListener(
+  "usuarioAutenticado",
+  function () {
+
+    configurarMenuPorRol();
+
+    renderView("inicio");
+
+  }
+);
