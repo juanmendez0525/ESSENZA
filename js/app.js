@@ -152,6 +152,7 @@ function renderInicio() {
       a => a.estado === "Pendiente"
     );
 
+
   // ==========================================
   // ACCIONES RÁPIDAS SEGÚN EL ROL
   // ==========================================
@@ -176,7 +177,9 @@ function renderInicio() {
     </button>
   `;
 
+
   // Solo administrador puede crear productos
+  // y acceder a clientes
   if (esAdmin) {
 
     acciones += `
@@ -188,9 +191,7 @@ function renderInicio() {
         <b>Agregar producto</b>
         <span>Crear una referencia</span>
       </button>
-    `;
 
-    acciones += `
       <button
         class="quick-btn"
         onclick="renderView('clientes')"
@@ -202,27 +203,20 @@ function renderInicio() {
     `;
   }
 
+
   // ==========================================
   // COPIA DE SEGURIDAD
   // ==========================================
 
-  const backupButton = esAdmin
-    ? `<button
-         id="backupBtn"
-         class="secondary-btn"
-       >
-         💾 Copia
-       </button>`
-    : "";
+  const backupWrapper =
+    document.getElementById("backupWrapper");
 
-  // Actualizar botón de copia del encabezado
-  const backupBtn =
-    document.getElementById("backupBtn");
+  if (backupWrapper) {
 
-  if (backupBtn) {
-    backupBtn.style.display =
+    backupWrapper.style.display =
       esAdmin ? "" : "none";
   }
+
 
   // ==========================================
   // ÚLTIMAS VENTAS
@@ -231,8 +225,12 @@ function renderInicio() {
   const ultimasVentas = esAdmin
     ? `
       <div class="card">
+
         <div class="section-head">
-          <h2>Últimas ventas</h2>
+
+          <h2>
+            Últimas ventas
+          </h2>
 
           <button
             class="secondary-btn"
@@ -240,6 +238,7 @@ function renderInicio() {
           >
             Ver reportes
           </button>
+
         </div>
 
         <div class="list">
@@ -251,6 +250,7 @@ function renderInicio() {
                 <div class="list-item">
 
                   <div>
+
                     <b>
                       #${v.id} · ${v.cliente}
                     </b>
@@ -258,6 +258,7 @@ function renderInicio() {
                     <div class="small">
                       ${v.fecha} · ${v.metodo}
                     </div>
+
                   </div>
 
                   <b>
@@ -270,9 +271,15 @@ function renderInicio() {
           }
 
         </div>
+
       </div>
     `
     : "";
+
+
+  // ==========================================
+  // VISTA PRINCIPAL
+  // ==========================================
 
   return `
 
@@ -352,6 +359,7 @@ function renderInicio() {
         </div>
 
         <div class="stat-extra">
+
           ${money(
             pending.reduce(
               (s, a) =>
@@ -361,7 +369,9 @@ function renderInicio() {
               0
             )
           )}
+
           pendiente
+
         </div>
 
       </div>
@@ -391,7 +401,11 @@ function renderInicio() {
 
 
     <div class="section-head mt">
-      <h2>Acciones rápidas</h2>
+
+      <h2>
+        Acciones rápidas
+      </h2>
+
     </div>
 
 
@@ -468,13 +482,7 @@ function renderConfiguracion(){
   <h2>Datos del prototipo</h2>
   <p class="small">Esta versión guarda la información en el navegador mediante localStorage. No es todavía una base de datos Android ni facturación electrónica DIAN.</p>
   <button class="danger-btn mt" onclick="resetDemo()">Restablecer datos de demostración</button>
-  </div>
-
-<div class="card mt">
-<h2>Sesión</h2>
-<p class="small">Cuenta actualmente conectada.</p>
-<button class="danger-btn mt" onclick="cerrarSesion()">🚪 Cerrar sesión</button>
-</div>`;
+  </div>`;
 }
 function resetDemo(){if(confirm("¿Restablecer todos los datos de demostración?")){localStorage.removeItem("makeupAppData");DB=loadData();cart=[];renderView("inicio");toast("Datos restaurados")}}
 async function cerrarSesion() {
@@ -535,6 +543,16 @@ if (backupBtn) {
       return;
     }
 
+    const confirmar = confirm(
+      "¿Deseas crear una copia de respaldo?\n\n" +
+      "Se descargará un archivo con los datos " +
+      "actuales de la aplicación."
+    );
+
+    if (!confirmar) {
+      return;
+    }
+
     const blob =
       new Blob(
         [JSON.stringify(DB, null, 2)],
@@ -556,7 +574,7 @@ if (backupBtn) {
 
     URL.revokeObjectURL(a.href);
 
-    toast("Copia creada");
+    toast("Copia de respaldo creada");
   };
 }
 document.addEventListener("submit",e=>{if(e.target.id==="settingsForm"){e.preventDefault();DB.configuracion=Object.fromEntries(new FormData(e.target));saveData();toast("Configuración guardada")}})
