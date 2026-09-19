@@ -125,28 +125,336 @@ function configurarMenuPorRol() {
 
 }
 
-function renderInicio(){
-  const today=new Date().toISOString().slice(0,10), todaySales=DB.ventas.filter(v=>v.fecha===today), sales=todaySales.reduce((s,v)=>s+v.total,0);
-  const low=DB.productos.filter(p=>p.stock<=p.stockMinimo);
-  const pending=DB.apartados.filter(a=>a.estado==="Pendiente");
-  return `<div class="hero"><h2>¡Bienvenido! 👋</h2><p>Administra tus ventas, maquillaje e inventario desde un solo lugar.</p></div>
-  <div class="stats-grid grid">
-    <div class="card stat-card"><div class="stat-icon">💰</div><div class="stat-label">Ventas de hoy</div><div class="stat-value">${money(sales)}</div><div class="stat-extra">${todaySales.length} ventas</div></div>
-    <div class="card stat-card"><div class="stat-icon">📦</div><div class="stat-label">Productos</div><div class="stat-value">${DB.productos.reduce((s,p)=>s+p.stock,0)}</div><div class="stat-extra">${DB.productos.length} referencias</div></div>
-    <div class="card stat-card"><div class="stat-icon">🟡</div><div class="stat-label">Apartados</div><div class="stat-value">${pending.length}</div><div class="stat-extra">${money(pending.reduce((s,a)=>s+a.total-a.abonado,0))} pendiente</div></div>
-    <div class="card stat-card"><div class="stat-icon">⚠️</div><div class="stat-label">Stock bajo</div><div class="stat-value">${low.length}</div><div class="stat-extra">Revisa inventario</div></div>
-  </div>
-  <div class="section-head mt"><h2>Acciones rápidas</h2></div>
-  <div class="quick-grid grid">
-    <button class="quick-btn" onclick="renderView('ventas')">🛒<b>Nueva venta</b><span>Registrar una compra</span></button>
-    <button class="quick-btn" onclick="openProductModal()">📦<b>Agregar producto</b><span>Crear una referencia</span></button>
-    <button class="quick-btn" onclick="openApartadoModal()">🟡<b>Nuevo apartado</b><span>Separar productos</span></button>
-    <button class="quick-btn" onclick="renderView('clientes')">👥<b>Clientes</b><span>Ver tus clientes</span></button>
-  </div>
-  <div class="two-col grid mt">
-    <div class="card"><div class="section-head"><h2>Últimas ventas</h2><button class="secondary-btn" onclick="renderView('reportes')">Ver reportes</button></div><div class="list">${DB.ventas.slice(0,5).map(v=>`<div class="list-item"><div><b>#${v.id} · ${v.cliente}</b><div class="small">${v.fecha} · ${v.metodo}</div></div><b>${money(v.total)}</b></div>`).join("")}</div></div>
-    <div class="card"><div class="section-head"><h2>⚠️ Stock bajo</h2><button class="secondary-btn" onclick="renderView('inventario')">Inventario</button></div><div class="list">${low.slice(0,6).map(p=>`<div class="list-item"><span>${p.nombre}</span><span class="badge warning">${p.stock} uds.</span></div>`).join("")||'<div class="empty">Todo está bien por ahora.</div>'}</div></div>
-  </div>`;
+function renderInicio() {
+
+  const rol = window.perfilActual?.rol;
+  const esAdmin = rol === "administrador";
+
+  const today =
+    new Date().toISOString().slice(0, 10);
+
+  const todaySales =
+    DB.ventas.filter(v => v.fecha === today);
+
+  const sales =
+    todaySales.reduce(
+      (s, v) => s + Number(v.total || 0),
+      0
+    );
+
+  const low =
+    DB.productos.filter(
+      p => p.stock <= p.stockMinimo
+    );
+
+  const pending =
+    DB.apartados.filter(
+      a => a.estado === "Pendiente"
+    );
+
+  // ==========================================
+  // ACCIONES RÁPIDAS SEGÚN EL ROL
+  // ==========================================
+
+  let acciones = `
+    <button
+      class="quick-btn"
+      onclick="renderView('ventas')"
+    >
+      🛒
+      <b>Nueva venta</b>
+      <span>Registrar una compra</span>
+    </button>
+
+    <button
+      class="quick-btn"
+      onclick="openApartadoModal()"
+    >
+      🟡
+      <b>Nuevo apartado</b>
+      <span>Separar productos</span>
+    </button>
+  `;
+
+  // Solo administrador puede crear productos
+  if (esAdmin) {
+
+    acciones += `
+      <button
+        class="quick-btn"
+        onclick="openProductModal()"
+      >
+        📦
+        <b>Agregar producto</b>
+        <span>Crear una referencia</span>
+      </button>
+    `;
+
+    acciones += `
+      <button
+        class="quick-btn"
+        onclick="renderView('clientes')"
+      >
+        👥
+        <b>Clientes</b>
+        <span>Ver tus clientes</span>
+      </button>
+    `;
+  }
+
+  // ==========================================
+  // COPIA DE SEGURIDAD
+  // ==========================================
+
+  const backupButton = esAdmin
+    ? `<button
+         id="backupBtn"
+         class="secondary-btn"
+       >
+         💾 Copia
+       </button>`
+    : "";
+
+  // Actualizar botón de copia del encabezado
+  const backupBtn =
+    document.getElementById("backupBtn");
+
+  if (backupBtn) {
+    backupBtn.style.display =
+      esAdmin ? "" : "none";
+  }
+
+  // ==========================================
+  // ÚLTIMAS VENTAS
+  // ==========================================
+
+  const ultimasVentas = esAdmin
+    ? `
+      <div class="card">
+        <div class="section-head">
+          <h2>Últimas ventas</h2>
+
+          <button
+            class="secondary-btn"
+            onclick="renderView('reportes')"
+          >
+            Ver reportes
+          </button>
+        </div>
+
+        <div class="list">
+
+          ${
+            DB.ventas
+              .slice(0, 5)
+              .map(v => `
+                <div class="list-item">
+
+                  <div>
+                    <b>
+                      #${v.id} · ${v.cliente}
+                    </b>
+
+                    <div class="small">
+                      ${v.fecha} · ${v.metodo}
+                    </div>
+                  </div>
+
+                  <b>
+                    ${money(v.total)}
+                  </b>
+
+                </div>
+              `)
+              .join("")
+          }
+
+        </div>
+      </div>
+    `
+    : "";
+
+  return `
+
+    <div class="hero">
+
+      <h2>
+        ¡Bienvenido! 👋
+      </h2>
+
+      <p>
+        Administra tus ventas, maquillaje
+        e inventario desde un solo lugar.
+      </p>
+
+    </div>
+
+
+    <div class="stats-grid grid">
+
+      <div class="card stat-card">
+
+        <div class="stat-icon">
+          💰
+        </div>
+
+        <div class="stat-label">
+          Ventas de hoy
+        </div>
+
+        <div class="stat-value">
+          ${money(sales)}
+        </div>
+
+        <div class="stat-extra">
+          ${todaySales.length} ventas
+        </div>
+
+      </div>
+
+
+      <div class="card stat-card">
+
+        <div class="stat-icon">
+          📦
+        </div>
+
+        <div class="stat-label">
+          Productos
+        </div>
+
+        <div class="stat-value">
+          ${DB.productos.reduce(
+            (s, p) => s + Number(p.stock || 0),
+            0
+          )}
+        </div>
+
+        <div class="stat-extra">
+          ${DB.productos.length} referencias
+        </div>
+
+      </div>
+
+
+      <div class="card stat-card">
+
+        <div class="stat-icon">
+          🟡
+        </div>
+
+        <div class="stat-label">
+          Mis apartados pendientes
+        </div>
+
+        <div class="stat-value">
+          ${pending.length}
+        </div>
+
+        <div class="stat-extra">
+          ${money(
+            pending.reduce(
+              (s, a) =>
+                s +
+                Number(a.total || 0) -
+                Number(a.abonado || 0),
+              0
+            )
+          )}
+          pendiente
+        </div>
+
+      </div>
+
+
+      <div class="card stat-card">
+
+        <div class="stat-icon">
+          ⚠️
+        </div>
+
+        <div class="stat-label">
+          Stock bajo
+        </div>
+
+        <div class="stat-value">
+          ${low.length}
+        </div>
+
+        <div class="stat-extra">
+          Revisa inventario
+        </div>
+
+      </div>
+
+    </div>
+
+
+    <div class="section-head mt">
+      <h2>Acciones rápidas</h2>
+    </div>
+
+
+    <div class="quick-grid grid">
+      ${acciones}
+    </div>
+
+
+    <div class="two-col grid mt">
+
+      ${ultimasVentas}
+
+
+      <div class="card">
+
+        <div class="section-head">
+
+          <h2>
+            ⚠️ Stock bajo
+          </h2>
+
+          <button
+            class="secondary-btn"
+            onclick="renderView('inventario')"
+          >
+            Inventario
+          </button>
+
+        </div>
+
+        <div class="list">
+
+          ${
+            low
+              .slice(0, 6)
+              .map(p => `
+                <div class="list-item">
+
+                  <span>
+                    ${p.nombre}
+                  </span>
+
+                  <span class="badge warning">
+                    ${p.stock} uds.
+                  </span>
+
+                </div>
+              `)
+              .join("")
+              ||
+              `
+                <div class="empty">
+                  Todo está bien por ahora.
+                </div>
+              `
+          }
+
+        </div>
+
+      </div>
+
+    </div>
+  `;
 }
 function renderConfiguracion(){
   const c=DB.configuracion;
@@ -209,7 +517,48 @@ document.addEventListener("click",e=>{
   const b=e.target.closest("[data-view]");if(b){renderView(b.dataset.view);document.querySelector(".sidebar")?.classList.remove("open")}
 });
 document.getElementById("menuBtn").onclick=()=>document.querySelector(".sidebar").classList.toggle("open");
-document.getElementById("backupBtn").onclick=()=>{const blob=new Blob([JSON.stringify(DB,null,2)],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="respaldo-maquillaje.json";a.click();URL.revokeObjectURL(a.href);toast("Copia creada")};
+
+const backupBtn =
+  document.getElementById("backupBtn");
+
+if (backupBtn) {
+
+  backupBtn.onclick = () => {
+
+    if (
+      window.perfilActual?.rol !==
+      "administrador"
+    ) {
+      toast(
+        "No tienes permiso para realizar copias."
+      );
+      return;
+    }
+
+    const blob =
+      new Blob(
+        [JSON.stringify(DB, null, 2)],
+        {
+          type: "application/json"
+        }
+      );
+
+    const a =
+      document.createElement("a");
+
+    a.href =
+      URL.createObjectURL(blob);
+
+    a.download =
+      "respaldo-maquillaje.json";
+
+    a.click();
+
+    URL.revokeObjectURL(a.href);
+
+    toast("Copia creada");
+  };
+}
 document.addEventListener("submit",e=>{if(e.target.id==="settingsForm"){e.preventDefault();DB.configuracion=Object.fromEntries(new FormData(e.target));saveData();toast("Configuración guardada")}})
 document.addEventListener(
   "usuarioAutenticado",
@@ -221,3 +570,10 @@ document.addEventListener(
 
   }
 );
+
+const btnCerrarSesion =
+  document.getElementById("btnCerrarSesionPrueba");
+
+if (btnCerrarSesion) {
+  btnCerrarSesion.onclick = cerrarSesion;
+}
