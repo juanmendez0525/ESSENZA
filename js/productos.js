@@ -6,6 +6,10 @@ function productStatus(p){
   return '<span class="badge success">Disponible</span>';
 }
 function openProductModal(id=null){
+  if (window.perfilActual?.rol !== "administrador") {
+  toast("No tienes permiso para administrar productos.");
+  return;
+  }
   const p=id?getProduct(id):{nombre:"",marca:"",categoria:"",referencia:"",precioCompra:0,precioVenta:0,stock:0,stockMinimo:2,img:""};
   openModal(id?"Editar producto":"Nuevo producto",`
     <form id="productForm">
@@ -31,7 +35,13 @@ function openProductModal(id=null){
     saveData(); closeModal(); renderView("inventario"); toast("Producto guardado");
   };
 }
+
 function adjustStock(id){
+
+  if (window.perfilActual?.rol !== "administrador") {
+  toast("No tienes permiso para modificar el inventario.");
+  return;
+  }
   const p=getProduct(id);
   openModal("Movimiento de inventario",`
     <div class="card" style="box-shadow:none;background:var(--soft);margin-bottom:15px">
@@ -50,13 +60,282 @@ function adjustStock(id){
   };
 }
 function renderInventario(){
-  const q=(document.getElementById("inventorySearch")?.value||"").toLowerCase();
-  const cat=document.getElementById("inventoryCat")?.value||"";
-  const list=DB.productos.filter(p=>(!q||`${p.nombre} ${p.marca} ${p.referencia}`.toLowerCase().includes(q))&&(!cat||p.categoria===cat));
-  return `<div class="hero"><div class="section-head"><div><h2>Control de inventario</h2><p>Administra existencias, precios y productos.</p></div><button class="primary-btn" onclick="openProductModal()">+ Nuevo producto</button></div></div>
-  <div class="filters"><input id="inventorySearch" oninput="renderView('inventario')" class="input search-box" placeholder="🔍 Buscar producto..." value="${q}">
-  <select id="inventoryCat" onchange="renderView('inventario')" class="select" style="max-width:190px"><option value="">Todas las categorías</option>${[...new Set(DB.productos.map(p=>p.categoria))].map(c=>`<option ${c===cat?"selected":""}>${c}</option>`).join("")}</select></div>
-  <div class="card"><div class="table-wrap"><table><thead><tr><th>Producto</th><th>Categoría</th><th>Compra</th><th>Venta</th><th>Stock</th><th>Estado</th><th>Acciones</th></tr></thead><tbody>
-  ${list.map(p=>`<tr><td><div class="product-cell"><img class="product-img" src="${p.img||""}" onerror="this.style.visibility='hidden'"><div><b>${p.nombre}</b><div class="small">${p.marca} · ${p.referencia}</div></div></div></td><td>${p.categoria}</td><td>${money(p.precioCompra)}</td><td><b>${money(p.precioVenta)}</b></td><td>${p.stock}</td><td>${productStatus(p)}</td><td><button class="secondary-btn" onclick="adjustStock(${p.id})">± Stock</button> <button class="secondary-btn" onclick="openProductModal(${p.id})">Editar</button></td></tr>`).join("")||`<tr><td colspan="7"><div class="empty">No hay productos.</div></td></tr>`}
-  </tbody></table></div></div>`;
+
+  const rol = window.perfilActual?.rol;
+  const esAdmin = rol === "administrador";
+
+  const q =
+    (document.getElementById("inventorySearch")?.value || "")
+      .toLowerCase();
+
+  const cat =
+    document.getElementById("inventoryCat")?.value || "";
+
+  const list =
+    DB.productos.filter(p =>
+      (!q ||
+        `${p.nombre} ${p.marca} ${p.referencia}`
+          .toLowerCase()
+          .includes(q)
+      ) &&
+      (!cat || p.categoria === cat)
+    );
+
+
+  // ==========================================
+  // BOTÓN NUEVO PRODUCTO
+  // SOLO ADMINISTRADOR
+  // ==========================================
+
+  const botonNuevoProducto = esAdmin
+    ? `
+      <button
+        class="primary-btn"
+        onclick="openProductModal()"
+      >
+        + Nuevo producto
+      </button>
+    `
+    : "";
+
+
+  // ==========================================
+  // ACCIONES POR PRODUCTO
+  // SOLO ADMINISTRADOR
+  // ==========================================
+
+  const acciones = esAdmin
+    ? `
+      <button
+        class="secondary-btn"
+        onclick="adjustStock('${p.id}')"
+      >
+        ± Stock
+      </button>
+
+      <button
+        class="secondary-btn"
+        onclick="openProductModal('${p.id}')"
+      >
+        Editar
+      </button>
+    `
+    : "";
+
+
+  return `
+
+    <div class="hero">
+
+      <div class="section-head">
+
+        <div>
+
+          <h2>
+            Control de inventario
+          </h2>
+
+          <p>
+            ${
+              esAdmin
+                ? "Administra existencias, precios y productos."
+                : "Consulta productos y existencias disponibles."
+            }
+          </p>
+
+        </div>
+
+        ${botonNuevoProducto}
+
+      </div>
+
+    </div>
+
+
+    <div class="filters">
+
+      <input
+        id="inventorySearch"
+        oninput="renderView('inventario')"
+        class="input search-box"
+        placeholder="🔍 Buscar producto..."
+        value="${q}"
+      >
+
+      <select
+        id="inventoryCat"
+        onchange="renderView('inventario')"
+        class="select"
+        style="max-width:190px"
+      >
+
+        <option value="">
+          Todas las categorías
+        </option>
+
+        ${
+          [
+            ...new Set(
+              DB.productos.map(
+                p => p.categoria
+              )
+            )
+          ]
+          .map(c =>
+            `<option ${
+              c === cat ? "selected" : ""
+            }>${c}</option>`
+          )
+          .join("")
+        }
+
+      </select>
+
+    </div>
+
+
+    <div class="card">
+
+      <div class="table-wrap">
+
+        <table>
+
+          <thead>
+
+            <tr>
+
+              <th>Producto</th>
+              <th>Categoría</th>
+              <th>Compra</th>
+              <th>Venta</th>
+              <th>Stock</th>
+              <th>Estado</th>
+
+              ${
+                esAdmin
+                  ? "<th>Acciones</th>"
+                  : ""
+              }
+
+            </tr>
+
+          </thead>
+
+
+          <tbody>
+
+            ${
+              list
+                .map(p => `
+
+                  <tr>
+
+                    <td>
+
+                      <div class="product-cell">
+
+                        <img
+                          class="product-img"
+                          src="${p.img || ""}"
+                          onerror="this.style.visibility='hidden'"
+                        >
+
+                        <div>
+
+                          <b>
+                            ${p.nombre}
+                          </b>
+
+                          <div class="small">
+                            ${p.marca} · ${p.referencia}
+                          </div>
+
+                        </div>
+
+                      </div>
+
+                    </td>
+
+
+                    <td>
+                      ${p.categoria}
+                    </td>
+
+
+                    <td>
+                      ${money(p.precioCompra)}
+                    </td>
+
+
+                    <td>
+                      <b>
+                        ${money(p.precioVenta)}
+                      </b>
+                    </td>
+
+
+                    <td>
+                      ${p.stock}
+                    </td>
+
+
+                    <td>
+                      ${productStatus(p)}
+                    </td>
+
+
+                    ${
+                      esAdmin
+                        ? `
+                          <td>
+
+                            <button
+                              class="secondary-btn"
+                              onclick="adjustStock('${p.id}')"
+                            >
+                              ± Stock
+                            </button>
+
+                            <button
+                              class="secondary-btn"
+                              onclick="openProductModal('${p.id}')"
+                            >
+                              Editar
+                            </button>
+
+                          </td>
+                        `
+                        : ""
+                    }
+
+                  </tr>
+
+                `)
+                .join("")
+
+                ||
+
+                `
+                  <tr>
+
+                    <td colspan="${esAdmin ? 7 : 6}">
+
+                      <div class="empty">
+                        No hay productos.
+                      </div>
+
+                    </td>
+
+                  </tr>
+                `
+            }
+
+          </tbody>
+
+        </table>
+
+      </div>
+
+    </div>
+  `;
 }
