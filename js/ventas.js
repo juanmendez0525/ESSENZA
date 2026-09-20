@@ -14,6 +14,10 @@ function changeCart(id,delta){
   if(item.cantidad>p.stock)item.cantidad=p.stock;
   renderView("ventas");
 }
+function removeFromCart(id){
+  cart = cart.filter(i => i.productoId !== id);
+  renderView("ventas");
+}
 function cartTotal(){return cart.reduce((s,i)=>s+i.precio*i.cantidad,0)}
 function finalizeSale(){
 
