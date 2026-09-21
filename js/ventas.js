@@ -242,170 +242,298 @@ function finalizeSale(){
   };
 
 }
-function showReceipt(sale){
+function showReceipt(sale) {
+
+  const fechaVenta = new Date();
+
+  const fecha = fechaVenta.toLocaleDateString("es-CO", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric"
+  });
+
+  const hora = fechaVenta.toLocaleTimeString("es-CO", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: true
+  });
+
+  const subtotal = sale.items.reduce(
+    (s, item) =>
+      s + (Number(item.precio) * Number(item.cantidad)),
+    0
+  );
+
+  const filasProductos = sale.items.map((item, index) => {
+
+    const producto = getProduct(item.productoId);
+
+    const nombre = producto?.nombre || "Producto";
+
+    const totalProducto =
+      Number(item.precio) * Number(item.cantidad);
+
+    return `
+      <tr>
+        <td>${index + 1}</td>
+
+        <td class="desc">
+          ${nombre}
+        </td>
+
+        <td>
+          ${item.cantidad}
+        </td>
+
+        <td>
+          ${money(item.precio)}
+        </td>
+
+        <td>
+          ${money(totalProducto)}
+        </td>
+      </tr>
+    `;
+
+  }).join("");
+
+  const filaDescuento = sale.descuento > 0
+    ? `
+      <tr>
+        <td></td>
+
+        <td class="desc">
+          Descuento
+        </td>
+
+        <td></td>
+
+        <td>
+          -${money(sale.descuento)}
+        </td>
+
+        <td>
+          -${money(sale.descuento)}
+        </td>
+      </tr>
+    `
+    : "";
 
   openModal(
     "¡Venta exitosa! 🎉",
 
     `
 
-    <div
-      style="
-        text-align:center;
-        padding:10px 10px 18px;
-      "
-    >
+    <div class="receipt-wrapper">
 
-      <div
-        style="
-          font-size:42px;
-          margin-bottom:5px;
-        "
-      >
-        ✅
-      </div>
+      <div id="receipt" class="invoice-card">
 
-      <h2
-        style="
-          margin:0 0 5px;
-        "
-      >
-        Venta exitosa
-      </h2>
+        <!-- ENCABEZADO -->
 
-      <p class="small">
-        La venta fue registrada correctamente.
-      </p>
+        <div class="invoice-header">
 
-    </div>
+          <div>
 
+            <div class="brand-title">
+              ESSENZA
+            </div>
 
-    <div
-      id="receipt"
-      style="
-        padding:15px;
-        border:1px dashed #bbb;
-        max-width:430px;
-        margin:auto;
-      "
-    >
-
-      <div style="text-align:center">
-
-        <h2 style="margin:0">
-          ${DB.configuracion.negocio}
-        </h2>
-
-        <div class="small">
-          Comprobante #${sale.id}
-        </div>
-
-        <div class="small">
-          ${sale.fecha}
-        </div>
-
-      </div>
-
-
-      <hr>
-
-
-      ${sale.items.map(i => `
-
-        <div
-          class="row space"
-          style="padding:6px 0"
-        >
-
-          <span>
-            ${getProduct(i.productoId)?.nombre}
-            × ${i.cantidad}
-          </span>
-
-          <b>
-            ${money(
-              i.precio * i.cantidad
-            )}
-          </b>
-
-        </div>
-
-      `).join("")}
-
-
-      ${
-        sale.descuento
-
-        ?
-
-        `
-          <div class="row space">
-
-            <span>
-              Descuento
-            </span>
-
-            <b>
-              -${money(sale.descuento)}
-            </b>
+            <div class="brand-subtitle">
+              -MAKEUP-
+            </div>
 
           </div>
-        `
 
-        :
+          <div class="logo-container">
 
-        ""
-      }
+            <img
+              src="recursos/logo.png"
+              alt="Logo ESSENZA MAKEUP"
+              class="logo-img"
+            >
+
+          </div>
+
+        </div>
 
 
-      <hr>
+        <!-- INFORMACIÓN -->
+
+        <div class="info-section">
+
+          <div class="client-info">
+
+            <h3>
+              INF. CLIENTE:
+            </h3>
+
+            <p>
+              Nombre: ${sale.cliente}
+            </p>
+
+            <p>
+              Contacto: —
+            </p>
+
+            <p>
+              Dirección: —
+            </p>
+
+          </div>
 
 
-      <div class="row space">
+          <div class="receipt-info">
 
-        <b>
-          TOTAL
-        </b>
+            <p>
+              Comprobante: ${sale.id}
+            </p>
 
-        <b>
-          ${money(sale.total)}
-        </b>
+            <p>
+              Fecha: ${fecha}
+            </p>
+
+            <p>
+              Hora: ${hora}
+            </p>
+
+          </div>
+
+        </div>
+
+
+        <!-- TABLA DE PRODUCTOS -->
+
+        <table class="invoice-table">
+
+          <thead>
+
+            <tr>
+
+              <th style="width:15%;">
+                Item
+              </th>
+
+              <th style="width:35%;">
+                Descripción
+              </th>
+
+              <th style="width:15%;">
+                Unidad
+              </th>
+
+              <th style="width:17%;">
+                Precio unitario
+              </th>
+
+              <th style="width:18%;">
+                Total
+              </th>
+
+            </tr>
+
+          </thead>
+
+          <tbody>
+
+            ${filasProductos}
+
+            ${filaDescuento}
+
+            <tr class="empty-row">
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+            </tr>
+
+          </tbody>
+
+        </table>
+
+
+        <!-- PARTE INFERIOR -->
+
+        <div class="footer-section">
+
+          <div class="observaciones">
+
+            <h4>
+              Observaciones
+            </h4>
+
+            <p>
+              ${sale.metodo}
+            </p>
+
+            <div class="check-icon">
+              ✓
+            </div>
+
+          </div>
+
+
+          <div class="totals">
+
+            <div class="subtotal">
+
+              Sub Total:
+              ${money(subtotal)}
+
+            </div>
+
+            ${
+              sale.descuento > 0
+              ? `
+                <div class="subtotal">
+                  Descuento:
+                  -${money(sale.descuento)}
+                </div>
+              `
+              : ""
+            }
+
+            <div class="total-border">
+
+              Total:
+              ${money(sale.total)}
+
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <!-- AGRADECIMIENTO -->
+
+        <div class="thank-you">
+          Thank You
+        </div>
 
       </div>
 
 
-      <p
-        class="small"
-        style="text-align:center"
-      >
+      <!-- BOTONES -->
 
-        Pago:
-        ${sale.metodo}
+      <div class="modal-actions">
 
-        <br>
+        <button
+          class="secondary-btn"
+          onclick="window.print()"
+        >
+          🖨 Imprimir
+        </button>
 
-        ¡Gracias por tu compra!
+        <button
+          class="primary-btn"
+          onclick="closeModal();renderView('ventas')"
+        >
+          Nueva venta
+        </button>
 
-      </p>
-
-    </div>
-
-
-    <div class="modal-actions">
-
-      <button
-        class="secondary-btn"
-        onclick="window.print()"
-      >
-        🖨 Imprimir
-      </button>
-
-      <button
-        class="primary-btn"
-        onclick="closeModal();renderView('ventas')"
-      >
-        Nueva venta
-      </button>
+      </div>
 
     </div>
 
