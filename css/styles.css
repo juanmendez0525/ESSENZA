@@ -226,3 +226,11 @@ th,td{padding:12px 10px;border-bottom:1px solid var(--border);white-space:nowrap
   display: none;
 }
 
+/* Ajuste de espacio entre menú y contenido */
+.app-shell {
+  gap: 0 !important;
+}
+
+.main {
+  margin-left: 0 !important;
+}
