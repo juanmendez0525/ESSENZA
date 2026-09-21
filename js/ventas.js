@@ -110,7 +110,7 @@ function finalizeSale(){
         <!-- DESCRIPCIÓN DEL DESCUENTO -->
         <div class="field full">
 
-          <label>
+          <label id="labelDescripcionDescuento">
             Descripción del descuento
           </label>
 
