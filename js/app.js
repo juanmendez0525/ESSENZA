@@ -595,3 +595,26 @@ const btnCerrarSesion =
 if (btnCerrarSesion) {
   btnCerrarSesion.onclick = cerrarSesion;
 }
+
+function configurarSidebarRetractil() {
+  const sidebar = document.querySelector(".sidebar");
+  const toggle = document.getElementById("sidebarToggle");
+
+  if (!sidebar || !toggle) return;
+
+  toggle.onclick = function () {
+
+    sidebar.classList.toggle("collapsed");
+
+    const estaContraido =
+      sidebar.classList.contains("collapsed");
+
+    toggle.textContent =
+      estaContraido ? "▶" : "◀";
+
+    toggle.title =
+      estaContraido
+        ? "Expandir menú"
+        : "Contraer menú";
+  };
+}
