@@ -234,3 +234,19 @@ th,td{padding:12px 10px;border-bottom:1px solid var(--border);white-space:nowrap
 .main {
   margin-left: 0 !important;
 }
+
+.app-shell {
+  width: 100%;
+  max-width: none;
+  gap: 0 !important;
+}
+
+.main {
+  width: 100%;
+  min-width: 0;
+  margin-left: 0 !important;
+}
+
+.sidebar {
+  flex-shrink: 0;
+}
