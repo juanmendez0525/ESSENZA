@@ -339,83 +339,118 @@ actualizarObligatoriedadDescuento();
 
   clienteId.value = cliente.id;
 
-  resultadoCliente.innerHTML =
-    `
-    <div
-      class="card"
-      style="
-        margin-top:10px;
-        padding:12px;
-        box-shadow:none;
-        background:var(--soft);
-      "
-    >
+  inputCliente.addEventListener(
+  "input",
+  function(){
 
-      <div
-        class="badge success"
-        style="display:inline-block;margin-bottom:10px;"
-      >
-        ✓ Cliente encontrado
-      </div>
+    const identificacion =
+      this.value.trim();
 
-      <div class="small">
-        <b>Nombre:</b>
-        ${cliente.nombre}
-      </div>
+    clienteId.value = "";
 
-      <div class="small">
-        <b>Identificación:</b>
-        ${cliente.identificacion || "—"}
-      </div>
 
-      <div class="small">
-        <b>Teléfono:</b>
-        ${cliente.telefono || "—"}
-      </div>
+    if(!identificacion){
 
-      <div class="small">
-        <b>Correo:</b>
-        ${cliente.email || "—"}
-      </div>
+      resultadoCliente.innerHTML =
+        `
+        <div class="small">
+          Consumidor final
+        </div>
+        `;
 
-    </div>
-    `;
+      return;
+    }
 
-}else{
 
-      }else{
+    const cliente =
+      DB.clientes.find(
+        c =>
+          String(c.identificacion || "")
+            .trim() === identificacion
+      );
 
-  resultadoCliente.innerHTML =
-    `
-    <div
-      style="
-        margin-top:8px;
-        color:#b45309;
-      "
-    >
-      No se encontró un cliente con esa identificación.
-    </div>
 
-    <button
-      type="button"
-      class="secondary-btn"
-      style="margin-top:8px;"
-      onclick="
-        document.getElementById('clienteIdentificacion').value='';
-        document.getElementById('clienteId').value='';
-        document.getElementById('clienteResultado').innerHTML='Consumidor final';
-        document.getElementById('clienteIdentificacion').focus();
-      "
-    >
-      Usar consumidor final
-    </button>
-    `;
+    if(cliente){
 
-}
+      clienteId.value = cliente.id;
+
+      resultadoCliente.innerHTML =
+        `
+        <div
+          class="card"
+          style="
+            margin-top:10px;
+            padding:12px;
+            box-shadow:none;
+            background:var(--soft);
+          "
+        >
+
+          <div
+            class="badge success"
+            style="
+              display:inline-block;
+              margin-bottom:10px;
+            "
+          >
+            ✓ Cliente encontrado
+          </div>
+
+          <div class="small">
+            <b>Nombre:</b>
+            ${cliente.nombre}
+          </div>
+
+          <div class="small">
+            <b>Identificación:</b>
+            ${cliente.identificacion || "—"}
+          </div>
+
+          <div class="small">
+            <b>Teléfono:</b>
+            ${cliente.telefono || "—"}
+          </div>
+
+          <div class="small">
+            <b>Correo:</b>
+            ${cliente.email || "—"}
+          </div>
+
+        </div>
+        `;
+
+    } else {
+
+      resultadoCliente.innerHTML =
+        `
+        <div
+          style="
+            margin-top:8px;
+            color:#b45309;
+          "
+        >
+          No se encontró un cliente con esa identificación.
+        </div>
+
+        <button
+          type="button"
+          class="secondary-btn"
+          style="margin-top:8px;"
+          onclick="
+            document.getElementById('clienteIdentificacion').value='';
+            document.getElementById('clienteId').value='';
+            document.getElementById('clienteResultado').innerHTML='Consumidor final';
+            document.getElementById('clienteIdentificacion').focus();
+          "
+        >
+          Usar consumidor final
+        </button>
+        `;
 
     }
-  );
 
+  }
+);
 
   // =========================
   // GUARDAR VENTA
