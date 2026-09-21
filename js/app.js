@@ -581,11 +581,9 @@ document.addEventListener("submit",e=>{if(e.target.id==="settingsForm"){e.preven
 document.addEventListener(
   "usuarioAutenticado",
   function () {
-
     configurarMenuPorRol();
-
+    configurarSidebarRetractil();
     renderView("inicio");
-
   }
 );
 
