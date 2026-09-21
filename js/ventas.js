@@ -333,18 +333,51 @@ actualizarObligatoriedadDescuento();
 
       if(cliente){
 
-        clienteId.value = cliente.id;
+  clienteId.value = cliente.id;
 
-        resultadoCliente.innerHTML =
-          `
-          <div
-            class="badge success"
-            style="display:inline-block;margin-top:4px;"
-          >
-            ✓ Cliente encontrado:
-            ${cliente.nombre}
-          </div>
-          `;
+  resultadoCliente.innerHTML =
+    `
+    <div
+      class="card"
+      style="
+        margin-top:10px;
+        padding:12px;
+        box-shadow:none;
+        background:var(--soft);
+      "
+    >
+
+      <div
+        class="badge success"
+        style="display:inline-block;margin-bottom:10px;"
+      >
+        ✓ Cliente encontrado
+      </div>
+
+      <div class="small">
+        <b>Nombre:</b>
+        ${cliente.nombre}
+      </div>
+
+      <div class="small">
+        <b>Identificación:</b>
+        ${cliente.identificacion || "—"}
+      </div>
+
+      <div class="small">
+        <b>Teléfono:</b>
+        ${cliente.telefono || "—"}
+      </div>
+
+      <div class="small">
+        <b>Correo:</b>
+        ${cliente.email || "—"}
+      </div>
+
+    </div>
+    `;
+
+}else{
 
       }else{
 
