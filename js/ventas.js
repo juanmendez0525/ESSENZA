@@ -19,6 +19,7 @@ function removeFromCart(id){
   renderView("ventas");
 }
 function cartTotal(){return cart.reduce((s,i)=>s+i.precio*i.cantidad,0)}
+
 function finalizeSale(){
 
   if(!cart.length){
@@ -127,55 +128,70 @@ function finalizeSale(){
 
 
       <!-- RESUMEN DE LA VENTA -->
-<div
-  class="card mt"
-  style="box-shadow:none;background:var(--soft)"
->
+      <div
+        class="card mt"
+        style="box-shadow:none;background:var(--soft)"
+      >
 
-  <div class="row space">
-    <span>Subtotal</span>
-    <b id="saleSubtotal">
-      ${money(cartTotal())}
-    </b>
-  </div>
+        <div class="row space">
 
-  <div
-    class="row space"
-    style="margin-top:10px;"
-  >
-    <span>Descuento</span>
-    <b id="saleDiscount">
-      ${money(0)}
-    </b>
-  </div>
+          <span>
+            Subtotal
+          </span>
 
-  <div
-    class="row space"
-    style="
-      margin-top:14px;
-      padding-top:12px;
-      border-top:1px solid rgba(0,0,0,.12);
-    "
-  >
-    <span
-      class="kpi"
-      style="font-size:18px"
-    >
-      TOTAL
-    </span>
+          <b id="saleSubtotal">
+            ${money(cartTotal())}
+          </b>
 
-    <b
-      id="saleTotal"
-      class="kpi"
-      style="font-size:22px"
-    >
-      ${money(cartTotal())}
-    </b>
-  </div>
-
-</div>
+        </div>
 
 
+        <div
+          class="row space"
+          style="margin-top:10px;"
+        >
+
+          <span>
+            Descuento
+          </span>
+
+          <b id="saleDiscount">
+            ${money(0)}
+          </b>
+
+        </div>
+
+
+        <div
+          class="row space"
+          style="
+            margin-top:14px;
+            padding-top:12px;
+            border-top:1px solid rgba(0,0,0,.12);
+          "
+        >
+
+          <span
+            class="kpi"
+            style="font-size:18px"
+          >
+            TOTAL
+          </span>
+
+          <b
+            id="saleTotal"
+            class="kpi"
+            style="font-size:22px"
+          >
+            ${money(cartTotal())}
+          </b>
+
+        </div>
+
+      </div>
+
+
+      <!-- BOTONES -->
       <div class="modal-actions">
 
         <button
@@ -200,110 +216,57 @@ function finalizeSale(){
 
 
   // =========================
-  // BUSCAR CLIENTE
+  // ELEMENTOS DEL FORMULARIO
   // =========================
 
   const inputCliente =
-    document.getElementById("clienteIdentificacion");
-
-  const resultadoCliente =
-    document.getElementById("clienteResultado");
-
-  const clienteId =
-    document.getElementById("clienteId");
-
-  const inputDescuento =
-  document.querySelector(
-    '#saleForm input[name="descuento"]'
-  );
-
-const saleDiscount =
-  document.getElementById("saleDiscount");
-
-const saleTotal =
-  document.getElementById("saleTotal");
-
-const subtotalVenta =
-  cartTotal();
-
-
-function actualizarTotales(){
-
-  const descuento =
-    Number(inputDescuento.value || 0);
-
-  const descuentoValido =
-    Math.max(
-      0,
-      Math.min(
-        descuento,
-        subtotalVenta
-      )
+    document.getElementById(
+      "clienteIdentificacion"
     );
 
-  const total =
-    subtotalVenta -
-    descuentoValido;
+  const resultadoCliente =
+    document.getElementById(
+      "clienteResultado"
+    );
+
+  const clienteId =
+    document.getElementById(
+      "clienteId"
+    );
+
+  const inputDescuento =
+    document.querySelector(
+      '#saleForm input[name="descuento"]'
+    );
+
+  const campoDescripcion =
+    document.querySelector(
+      '#saleForm input[name="descripcionDescuento"]'
+    );
+
+  const labelDescripcion =
+    document.getElementById(
+      "labelDescripcionDescuento"
+    );
+
+  const saleDiscount =
+    document.getElementById(
+      "saleDiscount"
+    );
+
+  const saleTotal =
+    document.getElementById(
+      "saleTotal"
+    );
+
+  const subtotalVenta =
+    cartTotal();
 
 
-  saleDiscount.textContent =
-    money(descuentoValido);
+  // =========================
+  // BUSCAR CLIENTE
+  // =========================
 
-  saleTotal.textContent =
-    money(total);
-
-}
-
-
-inputDescuento.addEventListener(
-  "input",
-  actualizarTotales
-);
-
-actualizarTotales();
-
-const campoDescripcion =
-  document.querySelector(
-    '#saleForm input[name="descripcionDescuento"]'
-  );
-
-const labelDescripcion =
-  document.getElementById(
-    "labelDescripcionDescuento"
-  );
-
-
-function actualizarObligatoriedadDescuento(){
-
-  const descuento =
-    Number(inputDescuento.value || 0);
-
-  if(descuento > 0){
-
-    campoDescripcion.required = true;
-
-    labelDescripcion.innerHTML =
-      "Descripción del descuento <span style=\"color:#b91c1c\">*</span>";
-
-  }else{
-
-    campoDescripcion.required = false;
-
-    labelDescripcion.textContent =
-      "Descripción del descuento";
-
-  }
-
-}
-
-
-inputDescuento.addEventListener(
-  "input",
-  actualizarObligatoriedadDescuento
-);
-
-actualizarObligatoriedadDescuento();
-  
   inputCliente.addEventListener(
     "input",
     function(){
@@ -316,147 +279,200 @@ actualizarObligatoriedadDescuento();
 
       if(!identificacion){
 
-  resultadoCliente.innerHTML =
-    `
-    <div class="small">
-      Consumidor final
-    </div>
-    `;
+        resultadoCliente.innerHTML =
+          `
+          <div class="small">
+            Consumidor final
+          </div>
+          `;
 
-  return;
+        return;
       }
 
 
       const cliente =
         DB.clientes.find(
           c =>
-            String(c.identificacion || "")
-              .trim() === identificacion
+            String(
+              c.identificacion || ""
+            ).trim() === identificacion
         );
 
 
       if(cliente){
 
-  clienteId.value = cliente.id;
+        clienteId.value =
+          cliente.id;
 
-  inputCliente.addEventListener(
-  "input",
-  function(){
+        resultadoCliente.innerHTML =
+          `
+          <div
+            class="card"
+            style="
+              margin-top:10px;
+              padding:12px;
+              box-shadow:none;
+              background:var(--soft);
+            "
+          >
 
-    const identificacion =
-      this.value.trim();
+            <div
+              class="badge success"
+              style="
+                display:inline-block;
+                margin-bottom:10px;
+              "
+            >
+              ✓ Cliente encontrado
+            </div>
 
-    clienteId.value = "";
+            <div class="small">
+              <b>Nombre:</b>
+              ${cliente.nombre}
+            </div>
 
+            <div class="small">
+              <b>Identificación:</b>
+              ${cliente.identificacion || "—"}
+            </div>
 
-    if(!identificacion){
+            <div class="small">
+              <b>Teléfono:</b>
+              ${cliente.telefono || "—"}
+            </div>
 
-      resultadoCliente.innerHTML =
-        `
-        <div class="small">
-          Consumidor final
-        </div>
-        `;
+            <div class="small">
+              <b>Correo:</b>
+              ${cliente.email || "—"}
+            </div>
 
-      return;
+          </div>
+          `;
+
+      } else {
+
+        resultadoCliente.innerHTML =
+          `
+          <div
+            style="
+              margin-top:8px;
+              color:#b45309;
+            "
+          >
+            No se encontró un cliente con esa identificación.
+          </div>
+
+          <button
+            type="button"
+            class="secondary-btn"
+            style="margin-top:8px;"
+            onclick="
+              document.getElementById('clienteIdentificacion').value='';
+              document.getElementById('clienteId').value='';
+              document.getElementById('clienteResultado').innerHTML='Consumidor final';
+              document.getElementById('clienteIdentificacion').focus();
+            "
+          >
+            Usar consumidor final
+          </button>
+          `;
+
+      }
+
     }
+  );
 
 
-    const cliente =
-      DB.clientes.find(
-        c =>
-          String(c.identificacion || "")
-            .trim() === identificacion
+  // =========================
+  // ACTUALIZAR TOTALES
+  // =========================
+
+  function actualizarTotales(){
+
+    const descuento =
+      Number(
+        inputDescuento.value || 0
+      );
+
+    const descuentoValido =
+      Math.max(
+        0,
+        Math.min(
+          descuento,
+          subtotalVenta
+        )
+      );
+
+    const total =
+      subtotalVenta -
+      descuentoValido;
+
+
+    saleDiscount.textContent =
+      money(descuentoValido);
+
+    saleTotal.textContent =
+      money(total);
+
+  }
+
+
+  // =========================
+  // VALIDAR DESCRIPCIÓN
+  // =========================
+
+  function actualizarObligatoriedadDescuento(){
+
+    const descuento =
+      Number(
+        inputDescuento.value || 0
       );
 
 
-    if(cliente){
+    if(descuento > 0){
 
-      clienteId.value = cliente.id;
+      campoDescripcion.required =
+        true;
 
-      resultadoCliente.innerHTML =
-        `
-        <div
-          class="card"
-          style="
-            margin-top:10px;
-            padding:12px;
-            box-shadow:none;
-            background:var(--soft);
-          "
-        >
-
-          <div
-            class="badge success"
-            style="
-              display:inline-block;
-              margin-bottom:10px;
-            "
-          >
-            ✓ Cliente encontrado
-          </div>
-
-          <div class="small">
-            <b>Nombre:</b>
-            ${cliente.nombre}
-          </div>
-
-          <div class="small">
-            <b>Identificación:</b>
-            ${cliente.identificacion || "—"}
-          </div>
-
-          <div class="small">
-            <b>Teléfono:</b>
-            ${cliente.telefono || "—"}
-          </div>
-
-          <div class="small">
-            <b>Correo:</b>
-            ${cliente.email || "—"}
-          </div>
-
-        </div>
-        `;
+      labelDescripcion.innerHTML =
+        'Descripción del descuento <span style="color:#b91c1c">*</span>';
 
     } else {
 
-      resultadoCliente.innerHTML =
-        `
-        <div
-          style="
-            margin-top:8px;
-            color:#b45309;
-          "
-        >
-          No se encontró un cliente con esa identificación.
-        </div>
+      campoDescripcion.required =
+        false;
 
-        <button
-          type="button"
-          class="secondary-btn"
-          style="margin-top:8px;"
-          onclick="
-            document.getElementById('clienteIdentificacion').value='';
-            document.getElementById('clienteId').value='';
-            document.getElementById('clienteResultado').innerHTML='Consumidor final';
-            document.getElementById('clienteIdentificacion').focus();
-          "
-        >
-          Usar consumidor final
-        </button>
-        `;
+      labelDescripcion.textContent =
+        "Descripción del descuento";
 
     }
 
   }
-);
+
+
+  inputDescuento.addEventListener(
+    "input",
+    actualizarTotales
+  );
+
+  inputDescuento.addEventListener(
+    "input",
+    actualizarObligatoriedadDescuento
+  );
+
+
+  actualizarTotales();
+
+  actualizarObligatoriedadDescuento();
+
 
   // =========================
   // GUARDAR VENTA
   // =========================
 
-  document.getElementById("saleForm").onsubmit = e => {
+  document.getElementById(
+    "saleForm"
+  ).onsubmit = e => {
 
     e.preventDefault();
 
@@ -473,33 +489,40 @@ actualizarObligatoriedadDescuento();
 
     const descripcionDescuento =
       String(
-        fd.get("descripcionDescuento") || ""
+        fd.get(
+          "descripcionDescuento"
+        ) || ""
       ).trim();
 
-    if(desc > 0 && !descripcionDescuento){
 
-  toast(
-    "Debes indicar el motivo o descripción del descuento."
-  );
+    if(
+      desc > 0 &&
+      !descripcionDescuento
+    ){
 
-  const campoDescripcion =
-    document.querySelector(
-      '#saleForm input[name="descripcionDescuento"]'
-    );
+      toast(
+        "Debes indicar el motivo o descripción del descuento."
+      );
 
-  if(campoDescripcion){
-    campoDescripcion.focus();
-  }
+      campoDescripcion.focus();
 
-  return;
+      return;
     }
 
 
-    const total =
+    const descuentoValido =
       Math.max(
         0,
-        cartTotal() - desc
+        Math.min(
+          desc,
+          subtotalVenta
+        )
       );
+
+
+    const total =
+      subtotalVenta -
+      descuentoValido;
 
 
     // =========================
@@ -550,7 +573,9 @@ actualizarObligatoriedadDescuento();
       DB.clientes.find(
         c =>
           String(c.id) ===
-          String(fd.get("clienteId"))
+          String(
+            fd.get("clienteId")
+          )
       );
 
 
@@ -560,7 +585,8 @@ actualizarObligatoriedadDescuento();
 
     DB.ventas.unshift({
 
-      id: Date.now(),
+      id:
+        Date.now(),
 
       fecha:
         new Date()
@@ -586,7 +612,7 @@ actualizarObligatoriedadDescuento();
         [...cart],
 
       descuento:
-        desc,
+        descuentoValido,
 
       descripcionDescuento:
         descripcionDescuento,
@@ -618,317 +644,4 @@ actualizarObligatoriedadDescuento();
 
   };
 
-}
-function showReceipt(sale) {
-
-  const fechaVenta = new Date();
-
-  const fecha = fechaVenta.toLocaleDateString("es-CO", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric"
-  });
-
-  const hora = fechaVenta.toLocaleTimeString("es-CO", {
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: true
-  });
-
-  const subtotal = sale.items.reduce(
-    (s, item) =>
-      s + (Number(item.precio) * Number(item.cantidad)),
-    0
-  );
-
-  const filasProductos = sale.items.map((item, index) => {
-
-    const producto = getProduct(item.productoId);
-
-    const nombre = producto?.nombre || "Producto";
-
-    const totalProducto =
-      Number(item.precio) * Number(item.cantidad);
-
-    return `
-      <tr>
-        <td>${index + 1}</td>
-
-        <td class="desc">
-          ${nombre}
-        </td>
-
-        <td>
-          ${item.cantidad}
-        </td>
-
-        <td>
-          ${money(item.precio)}
-        </td>
-
-        <td>
-          ${money(totalProducto)}
-        </td>
-      </tr>
-    `;
-
-  }).join("");
-
-  const filaDescuento = sale.descuento > 0
-    ? `
-      <tr>
-        <td></td>
-
-        <td class="desc">
-          Descuento
-        </td>
-
-        <td></td>
-
-        <td>
-          -${money(sale.descuento)}
-        </td>
-
-        <td>
-          -${money(sale.descuento)}
-        </td>
-      </tr>
-    `
-    : "";
-
-  openModal(
-    "¡Venta exitosa! 🎉",
-
-    `
-
-    <div class="receipt-wrapper">
-
-      <div id="receipt" class="invoice-card">
-
-        <!-- ENCABEZADO -->
-
-        <div class="invoice-header">
-
-          <div>
-
-            <div class="brand-title">
-              ESSENZA
-            </div>
-
-            <div class="brand-subtitle">
-              -MAKEUP-
-            </div>
-
-          </div>
-
-          <div class="logo-container">
-
-            <img
-              src="recursos/logo.png"
-              alt="Logo ESSENZA MAKEUP"
-              class="logo-img"
-            >
-
-          </div>
-
-        </div>
-
-
-        <!-- INFORMACIÓN -->
-
-        <div class="info-section">
-
-          <div class="client-info">
-
-            <h3>
-              INF. CLIENTE:
-            </h3>
-
-            <p>
-              Nombre: ${sale.cliente}
-            </p>
-
-            <p>
-              Contacto: —
-            </p>
-
-            <p>
-              Dirección: —
-            </p>
-
-          </div>
-
-
-          <div class="receipt-info">
-
-            <p>
-              Comprobante: ${sale.id}
-            </p>
-
-            <p>
-              Fecha: ${fecha}
-            </p>
-
-            <p>
-              Hora: ${hora}
-            </p>
-
-          </div>
-
-        </div>
-
-
-        <!-- TABLA DE PRODUCTOS -->
-
-        <table class="invoice-table">
-
-          <thead>
-
-            <tr>
-
-              <th style="width:15%;">
-                Item
-              </th>
-
-              <th style="width:35%;">
-                Descripción
-              </th>
-
-              <th style="width:15%;">
-                Unidad
-              </th>
-
-              <th style="width:17%;">
-                Precio unitario
-              </th>
-
-              <th style="width:18%;">
-                Total
-              </th>
-
-            </tr>
-
-          </thead>
-
-          <tbody>
-
-            ${filasProductos}
-
-            ${filaDescuento}
-
-            <tr class="empty-row">
-              <td></td>
-              <td></td>
-              <td></td>
-              <td></td>
-              <td></td>
-            </tr>
-
-          </tbody>
-
-        </table>
-
-
-        <!-- PARTE INFERIOR -->
-
-        <div class="footer-section">
-
-          <div class="observaciones">
-
-            <h4>
-              Observaciones
-            </h4>
-
-            <p>
-              ${sale.metodo}
-            </p>
-
-            <div class="check-icon">
-              ✓
-            </div>
-
-          </div>
-
-
-          <div class="totals">
-
-            <div class="subtotal">
-
-              Sub Total:
-              ${money(subtotal)}
-
-            </div>
-
-            ${
-              sale.descuento > 0
-              ? `
-                <div class="subtotal">
-                  Descuento:
-                  -${money(sale.descuento)}
-                </div>
-              `
-              : ""
-            }
-
-            <div class="total-border">
-
-              Total:
-              ${money(sale.total)}
-
-            </div>
-
-          </div>
-
-        </div>
-
-
-        <!-- AGRADECIMIENTO -->
-
-        <div class="thank-you">
-          Thank You
-        </div>
-
-      </div>
-
-
-      <!-- BOTONES -->
-
-      <div class="modal-actions">
-
-        <button
-          class="secondary-btn"
-          onclick="window.print()"
-        >
-          🖨 Imprimir
-        </button>
-
-        <button
-          class="primary-btn"
-          onclick="closeModal();renderView('ventas')"
-        >
-          Nueva venta
-        </button>
-
-      </div>
-
-    </div>
-
-    `
-  );
-
-}
-function renderVentas(){
-  const q=(document.getElementById("saleSearch")?.value||"").toLowerCase();
-  const products=DB.productos.filter(p=>`${p.nombre} ${p.marca}`.toLowerCase().includes(q));
-  return `<div class="two-col grid">
-    <div class="card"><div class="section-head"><h2>Productos</h2><span class="badge info">${cart.length} en carrito</span></div>
-      <input id="saleSearch" oninput="renderView('ventas')" class="input" placeholder="🔍 Buscar producto..." value="${q}">
-      <div class="product-grid mt">${products.map(p=>`<div class="product-card"><img src="${p.img}" onerror="this.style.visibility='hidden'"><div class="pc-body"><h3>${p.nombre}</h3><div class="small">${p.marca} · Stock ${p.stock}</div><div class="price">${money(p.precioVenta)}</div><button class="primary-btn" style="width:100%" onclick="addToCart(${p.id})" ${p.stock<=0?"disabled":""}>Agregar</button></div></div>`).join("")}</div>
-    </div>
-    <div class="card"><div class="section-head"><h2>Carrito</h2><button class="danger-btn" onclick="cart=[];renderView('ventas')">Vaciar</button></div>
-      ${cart.length?cart.map(i=>{const p=getProduct(i.productoId);return `<div class="list-item"><div><b>${p.nombre}</b><div class="small">${money(i.precio)} c/u</div></div><div class="row">   <button class="secondary-btn" onclick="changeCart(${p.id},-1)">−</button>   <b>${i.cantidad}</b>   <button class="secondary-btn" onclick="changeCart(${p.id},1)">+</button>   <button     class="danger-btn"     onclick="removeFromCart(${p.id})"     title="Eliminar del carrito"   >     🗑️   </button> </div></div>`}).join(""):`<div class="empty">El carrito está vacío.<br>Agrega productos para comenzar.</div>`}
-      <div class="mt"><div class="row space"><span>Subtotal</span><b>${money(cartTotal())}</b></div><div class="row space mt"><span class="kpi" style="font-size:18px">TOTAL</span><b class="kpi" style="font-size:22px">${money(cartTotal())}</b></div><button class="primary-btn mt" style="width:100%" onclick="finalizeSale()">Continuar al pago</button></div>
-    </div>
-  </div>`;
 }
