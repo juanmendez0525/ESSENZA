@@ -261,6 +261,48 @@ inputDescuento.addEventListener(
 );
 
 actualizarTotales();
+
+const campoDescripcion =
+  document.querySelector(
+    '#saleForm input[name="descripcionDescuento"]'
+  );
+
+const labelDescripcion =
+  document.getElementById(
+    "labelDescripcionDescuento"
+  );
+
+
+function actualizarObligatoriedadDescuento(){
+
+  const descuento =
+    Number(inputDescuento.value || 0);
+
+  if(descuento > 0){
+
+    campoDescripcion.required = true;
+
+    labelDescripcion.innerHTML =
+      "Descripción del descuento <span style=\"color:#b91c1c\">*</span>";
+
+  }else{
+
+    campoDescripcion.required = false;
+
+    labelDescripcion.textContent =
+      "Descripción del descuento";
+
+  }
+
+}
+
+
+inputDescuento.addEventListener(
+  "input",
+  actualizarObligatoriedadDescuento
+);
+
+actualizarObligatoriedadDescuento();
   
   inputCliente.addEventListener(
     "input",
