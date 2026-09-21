@@ -524,7 +524,20 @@ async function cerrarSesion() {
 document.addEventListener("click",e=>{
   const b=e.target.closest("[data-view]");if(b){renderView(b.dataset.view);document.querySelector(".sidebar")?.classList.remove("open")}
 });
-document.getElementById("menuBtn").onclick=()=>document.querySelector(".sidebar").classList.toggle("open");
+const menuBtn =
+  document.getElementById("menuBtn");
+
+if (menuBtn) {
+
+  menuBtn.onclick = () => {
+
+    document
+      .querySelector(".sidebar")
+      ?.classList.toggle("open");
+
+  };
+
+}
 
 const backupBtn =
   document.getElementById("backupBtn");
