@@ -385,14 +385,33 @@ actualizarObligatoriedadDescuento();
 
       }else{
 
-        resultadoCliente.innerHTML =
-          `
-          <span style="color:#b45309;">
-            No se encontró un cliente con esa identificación.
-          </span>
-          `;
+  resultadoCliente.innerHTML =
+    `
+    <div
+      style="
+        margin-top:8px;
+        color:#b45309;
+      "
+    >
+      No se encontró un cliente con esa identificación.
+    </div>
 
-      }
+    <button
+      type="button"
+      class="secondary-btn"
+      style="margin-top:8px;"
+      onclick="
+        document.getElementById('clienteIdentificacion').value='';
+        document.getElementById('clienteId').value='';
+        document.getElementById('clienteResultado').innerHTML='Consumidor final';
+        document.getElementById('clienteIdentificacion').focus();
+      "
+    >
+      Usar consumidor final
+    </button>
+    `;
+
+}
 
     }
   );
