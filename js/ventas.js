@@ -26,31 +26,48 @@ function finalizeSale(){
     return;
   }
 
-  openModal("Finalizar venta",`
+  openModal(
+    "Finalizar venta",
 
+    `
     <form id="saleForm">
 
       <div class="form-grid">
 
-        <div class="field">
-          <label>Cliente</label>
+        <!-- CLIENTE -->
+        <div class="field full">
 
-          <select
-            class="select"
-            name="cliente"
+          <label>
+            Buscar cliente por número de identificación
+          </label>
+
+          <input
+            class="input"
+            id="clienteIdentificacion"
+            name="identificacion"
+            placeholder="Escribe el número de identificación..."
+            autocomplete="off"
           >
-            <option>
-              Consumidor final
-            </option>
 
-            ${DB.clientes.map(c =>
-              `<option>${c.nombre}</option>`
-            ).join("")}
+          <div
+            id="clienteResultado"
+            class="small"
+            style="margin-top:8px;"
+          >
+            Consumidor final
+          </div>
 
-          </select>
+          <input
+            type="hidden"
+            id="clienteId"
+            name="clienteId"
+            value=""
+          >
+
         </div>
 
 
+        <!-- MÉTODO DE PAGO -->
         <div class="field">
 
           <label>
@@ -71,6 +88,7 @@ function finalizeSale(){
         </div>
 
 
+        <!-- DESCUENTO -->
         <div class="field">
 
           <label>
@@ -83,6 +101,24 @@ function finalizeSale(){
             name="descuento"
             value="0"
             min="0"
+            step="0.01"
+          >
+
+        </div>
+
+
+        <!-- DESCRIPCIÓN DEL DESCUENTO -->
+        <div class="field full">
+
+          <label>
+            Descripción del descuento
+          </label>
+
+          <input
+            class="input"
+            type="text"
+            name="descripcionDescuento"
+            placeholder="Ej: Descuento por promoción, cliente frecuente..."
           >
 
         </div>
@@ -90,6 +126,7 @@ function finalizeSale(){
       </div>
 
 
+      <!-- TOTAL -->
       <div
         class="card mt"
         style="box-shadow:none;background:var(--soft)"
@@ -125,8 +162,84 @@ function finalizeSale(){
       </div>
 
     </form>
-  `);
+    `
+  );
 
+
+  // =========================
+  // BUSCAR CLIENTE
+  // =========================
+
+  const inputCliente =
+    document.getElementById("clienteIdentificacion");
+
+  const resultadoCliente =
+    document.getElementById("clienteResultado");
+
+  const clienteId =
+    document.getElementById("clienteId");
+
+
+  inputCliente.addEventListener(
+    "input",
+    function(){
+
+      const identificacion =
+        this.value.trim();
+
+      clienteId.value = "";
+
+
+      if(!identificacion){
+
+        resultadoCliente.innerHTML =
+          "Consumidor final";
+
+        return;
+      }
+
+
+      const cliente =
+        DB.clientes.find(
+          c =>
+            String(c.identificacion || "")
+              .trim() === identificacion
+        );
+
+
+      if(cliente){
+
+        clienteId.value = cliente.id;
+
+        resultadoCliente.innerHTML =
+          `
+          <div
+            class="badge success"
+            style="display:inline-block;margin-top:4px;"
+          >
+            ✓ Cliente encontrado:
+            ${cliente.nombre}
+          </div>
+          `;
+
+      }else{
+
+        resultadoCliente.innerHTML =
+          `
+          <span style="color:#b45309;">
+            No se encontró un cliente con esa identificación.
+          </span>
+          `;
+
+      }
+
+    }
+  );
+
+
+  // =========================
+  // GUARDAR VENTA
+  // =========================
 
   document.getElementById("saleForm").onsubmit = e => {
 
@@ -136,10 +249,18 @@ function finalizeSale(){
     const fd =
       new FormData(e.target);
 
+
     const desc =
       Number(
         fd.get("descuento") || 0
       );
+
+
+    const descripcionDescuento =
+      String(
+        fd.get("descripcionDescuento") || ""
+      ).trim();
+
 
     const total =
       Math.max(
@@ -148,9 +269,9 @@ function finalizeSale(){
       );
 
 
-    // ==========================================
+    // =========================
     // CONFIRMACIÓN FINAL
-    // ==========================================
+    // =========================
 
     const confirmar =
       confirm(
@@ -169,9 +290,9 @@ function finalizeSale(){
     }
 
 
-    // ==========================================
+    // =========================
     // DESCONTAR INVENTARIO
-    // ==========================================
+    // =========================
 
     cart.forEach(i => {
 
@@ -179,15 +300,30 @@ function finalizeSale(){
         getProduct(i.productoId);
 
       if(producto){
-        producto.stock -= i.cantidad;
+
+        producto.stock -=
+          i.cantidad;
+
       }
 
     });
 
 
-    // ==========================================
+    // =========================
+    // OBTENER CLIENTE
+    // =========================
+
+    const clienteEncontrado =
+      DB.clientes.find(
+        c =>
+          String(c.id) ===
+          String(fd.get("clienteId"))
+      );
+
+
+    // =========================
     // CREAR VENTA
-    // ==========================================
+    // =========================
 
     DB.ventas.unshift({
 
@@ -199,13 +335,28 @@ function finalizeSale(){
           .slice(0,10),
 
       cliente:
-        fd.get("cliente"),
+        clienteEncontrado
+          ? clienteEncontrado.nombre
+          : "Consumidor final",
+
+      clienteId:
+        clienteEncontrado
+          ? clienteEncontrado.id
+          : null,
+
+      identificacionCliente:
+        clienteEncontrado
+          ? clienteEncontrado.identificacion
+          : "",
 
       items:
         [...cart],
 
       descuento:
         desc,
+
+      descripcionDescuento:
+        descripcionDescuento,
 
       metodo:
         fd.get("metodo"),
@@ -222,18 +373,11 @@ function finalizeSale(){
 
     saveData();
 
-
-    // Vaciar carrito
     cart = [];
 
-
-    // Cerrar formulario
     closeModal();
 
-
-    // Mostrar venta exitosa + comprobante
     showReceipt(sale);
-
 
     toast(
       "Venta registrada correctamente"
