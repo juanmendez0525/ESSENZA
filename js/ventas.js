@@ -343,6 +343,24 @@ actualizarTotales();
         fd.get("descripcionDescuento") || ""
       ).trim();
 
+    if(desc > 0 && !descripcionDescuento){
+
+  toast(
+    "Debes indicar el motivo o descripción del descuento."
+  );
+
+  const campoDescripcion =
+    document.querySelector(
+      '#saleForm input[name="descripcionDescuento"]'
+    );
+
+  if(campoDescripcion){
+    campoDescripcion.focus();
+  }
+
+  return;
+    }
+
 
     const total =
       Math.max(
