@@ -1,11 +1,118 @@
 function openClientModal(id=null){
-  const c=id?getClient(id):{nombre:"",telefono:"",email:""};
-  openModal(id?"Editar cliente":"Nuevo cliente",`<form id="clientForm"><div class="form-grid">
-    <div class="field"><label>Nombre</label><input class="input" name="nombre" value="${c.nombre}" required></div>
-    <div class="field"><label>Teléfono</label><input class="input" name="telefono" value="${c.telefono}"></div>
-    <div class="field full"><label>Correo</label><input class="input" type="email" name="email" value="${c.email||""}"></div>
-  </div><div class="modal-actions"><button type="button" class="secondary-btn" onclick="closeModal()">Cancelar</button><button class="primary-btn">Guardar</button></div></form>`);
-  document.getElementById("clientForm").onsubmit=e=>{e.preventDefault();const obj=Object.fromEntries(new FormData(e.target));if(id)Object.assign(getClient(id),obj);else DB.clientes.push({id:Date.now(),...obj});saveData();closeModal();renderView("clientes");toast("Cliente guardado")};
+
+  const c = id
+    ? getClient(id)
+    : {
+        nombre: "",
+        identificacion: "",
+        telefono: "",
+        email: ""
+      };
+
+  openModal(
+    id ? "Editar cliente" : "Nuevo cliente",
+
+    `<form id="clientForm">
+
+      <div class="form-grid">
+
+        <div class="field">
+          <label>Nombre</label>
+
+          <input
+            class="input"
+            name="nombre"
+            value="${c.nombre || ""}"
+            required
+          >
+        </div>
+
+        <div class="field">
+          <label>Número de identificación</label>
+
+          <input
+            class="input"
+            name="identificacion"
+            value="${c.identificacion || ""}"
+            placeholder="Ej: 1090123456"
+          >
+        </div>
+
+        <div class="field">
+          <label>Teléfono</label>
+
+          <input
+            class="input"
+            name="telefono"
+            value="${c.telefono || ""}"
+          >
+        </div>
+
+        <div class="field">
+          <label>Correo</label>
+
+          <input
+            class="input"
+            type="email"
+            name="email"
+            value="${c.email || ""}"
+          >
+        </div>
+
+      </div>
+
+      <div class="modal-actions">
+
+        <button
+          type="button"
+          class="secondary-btn"
+          onclick="closeModal()"
+        >
+          Cancelar
+        </button>
+
+        <button class="primary-btn">
+          Guardar
+        </button>
+
+      </div>
+
+    </form>`
+  );
+
+  document.getElementById("clientForm").onsubmit = e => {
+
+    e.preventDefault();
+
+    const obj =
+      Object.fromEntries(
+        new FormData(e.target)
+      );
+
+    if (id) {
+
+      Object.assign(
+        getClient(id),
+        obj
+      );
+
+    } else {
+
+      DB.clientes.push({
+        id: Date.now(),
+        ...obj
+      });
+
+    }
+
+    saveData();
+
+    closeModal();
+
+    renderView("clientes");
+
+    toast("Cliente guardado");
+  };
 }
 function renderClientes(){
   const q=(document.getElementById("clientSearch")?.value||"").toLowerCase();
