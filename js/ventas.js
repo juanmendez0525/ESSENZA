@@ -212,7 +212,56 @@ function finalizeSale(){
   const clienteId =
     document.getElementById("clienteId");
 
+  const inputDescuento =
+  document.querySelector(
+    '#saleForm input[name="descuento"]'
+  );
 
+const saleDiscount =
+  document.getElementById("saleDiscount");
+
+const saleTotal =
+  document.getElementById("saleTotal");
+
+const subtotalVenta =
+  cartTotal();
+
+
+function actualizarTotales(){
+
+  const descuento =
+    Number(inputDescuento.value || 0);
+
+  const descuentoValido =
+    Math.max(
+      0,
+      Math.min(
+        descuento,
+        subtotalVenta
+      )
+    );
+
+  const total =
+    subtotalVenta -
+    descuentoValido;
+
+
+  saleDiscount.textContent =
+    money(descuentoValido);
+
+  saleTotal.textContent =
+    money(total);
+
+}
+
+
+inputDescuento.addEventListener(
+  "input",
+  actualizarTotales
+);
+
+actualizarTotales();
+  
   inputCliente.addEventListener(
     "input",
     function(){
