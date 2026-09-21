@@ -316,10 +316,14 @@ actualizarObligatoriedadDescuento();
 
       if(!identificacion){
 
-        resultadoCliente.innerHTML =
-          "Consumidor final";
+  resultadoCliente.innerHTML =
+    `
+    <div class="small">
+      Consumidor final
+    </div>
+    `;
 
-        return;
+  return;
       }
 
 
