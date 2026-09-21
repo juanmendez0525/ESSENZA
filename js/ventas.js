@@ -126,21 +126,54 @@ function finalizeSale(){
       </div>
 
 
-      <!-- TOTAL -->
-      <div
-        class="card mt"
-        style="box-shadow:none;background:var(--soft)"
-      >
+      <!-- RESUMEN DE LA VENTA -->
+<div
+  class="card mt"
+  style="box-shadow:none;background:var(--soft)"
+>
 
-        <div class="small">
-          Total productos
-        </div>
+  <div class="row space">
+    <span>Subtotal</span>
+    <b id="saleSubtotal">
+      ${money(cartTotal())}
+    </b>
+  </div>
 
-        <div class="kpi">
-          ${money(cartTotal())}
-        </div>
+  <div
+    class="row space"
+    style="margin-top:10px;"
+  >
+    <span>Descuento</span>
+    <b id="saleDiscount">
+      ${money(0)}
+    </b>
+  </div>
 
-      </div>
+  <div
+    class="row space"
+    style="
+      margin-top:14px;
+      padding-top:12px;
+      border-top:1px solid rgba(0,0,0,.12);
+    "
+  >
+    <span
+      class="kpi"
+      style="font-size:18px"
+    >
+      TOTAL
+    </span>
+
+    <b
+      id="saleTotal"
+      class="kpi"
+      style="font-size:22px"
+    >
+      ${money(cartTotal())}
+    </b>
+  </div>
+
+</div>
 
 
       <div class="modal-actions">
