@@ -1,4 +1,6 @@
-function getClient(id){return DB.clientes.find(c=>c.id===Number(id))}
+function getClient(id){
+  return DB.clientes.find(c => String(c.id) === String(id));
+}
 function openApartadoModal(){
 
   let items = [];
