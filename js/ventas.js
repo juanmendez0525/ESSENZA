@@ -512,12 +512,13 @@ function finalizeSale(){
         "Consumidor final"
       ).trim();
 
-     const clienteEncontrado =
-        DB.clientes.find(
-          c =>
-            String(c.identificacion || "").trim()
-            === identificacion
-        );
+    const clienteEncontrado =
+    DB.clientes.find(
+      c =>
+        String(c.identificacion || "").trim()
+        === identificacion
+    );
+
 
     const descuento =
       Number(
@@ -625,45 +626,45 @@ function finalizeSale(){
 
     DB.ventas.unshift({
 
-  id:
-    Date.now(),
-
-  fecha:
-    new Date()
-      .toISOString()
-      .slice(0,10),
-
-  cliente:
-    cliente,
-
-  clienteId:
-    clienteEncontrado?.id || null,
-
-  identificacionCliente:
-    identificacion,
-
-  telefonoCliente:
-    clienteEncontrado?.telefono || "",
-
-  direccionCliente:
-    clienteEncontrado?.direccion || "",
-
-  items:
-    [...cart],
-
-  descuento:
-    descuento,
-
-  descripcionDescuento:
-    descripcionDescuento,
-
-  metodo:
-    fd.get("metodo"),
-
-  total:
-    total
-
-});
+      id:
+        Date.now(),
+        
+      fecha:
+        new Date()
+          .toISOString()
+          .slice(0,10),
+        
+      cliente:
+        cliente,
+        
+      clienteId:
+        clienteEncontrado?.id || null,
+        
+      identificacionCliente:
+        identificacion,
+        
+      telefonoCliente:
+        clienteEncontrado?.telefono || "",
+        
+      direccionCliente:
+        clienteEncontrado?.direccion || "",
+        
+      items:
+        [...cart],
+        
+      descuento:
+        descuento,
+        
+      descripcionDescuento:
+        descripcionDescuento,
+        
+      metodo:
+        fd.get("metodo"),
+        
+      total:
+        total
+        
+    });
 
 
     const sale =
@@ -813,46 +814,46 @@ function showReceipt(sale) {
 
         <!-- INFORMACIÓN -->
 
-<div class="info-section">
+        <div class="info-section">
 
-  <div class="client-info">
+          <div class="client-info">
 
-    <h3>
-      INF. CLIENTE:
-    </h3>
+            <h3>
+              INF. CLIENTE:
+            </h3>
 
-    <p>
-      Nombre: ${sale.cliente || "Consumidor final"}
-    </p>
+            <p>
+              Nombre: ${sale.cliente || "Consumidor final"}
+            </p>
 
-    <p>
-      Contacto: ${sale.telefonoCliente || "—"}
-    </p>
+            <p>
+              Contacto: ${sale.telefonoCliente || "—"}
+            </p>
 
-    <p>
-      Dirección: ${sale.direccionCliente || "—"}
-    </p>
+            <p>
+              Dirección: ${sale.direccionCliente || "—"}
+            </p>
 
-  </div>
+          </div>
 
 
-  <div class="receipt-info">
+          <div class="receipt-info">
 
-    <p>
-      Comprobante: ${sale.id}
-    </p>
+            <p>
+              Comprobante: ${sale.id}
+            </p>
 
-    <p>
-      Fecha: ${fecha}
-    </p>
+            <p>
+              Fecha: ${fecha}
+            </p>
 
-    <p>
-      Hora: ${hora}
-    </p>
+            <p>
+              Hora: ${hora}
+            </p>
 
-  </div>
+          </div>
 
-</div>
+        </div>
 
 
         <!-- TABLA DE PRODUCTOS -->

@@ -567,7 +567,7 @@ function openApartadoModal(){
       }
 
     });
-
+ //
 
     // ========================================
     // CREAR APARTADO
