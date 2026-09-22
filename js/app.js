@@ -1,5 +1,13 @@
 const viewMeta={
-  inicio:["Inicio","Resumen de tu negocio"],ventas:["Nueva venta","Busca productos y cobra"],inventario:["Inventario","Productos y existencias"],apartados:["Apartados","Pedidos, abonos y entregas"],clientes:["Clientes","Tus clientes y su historial"],reportes:["Reportes","Resumen de ventas y rentabilidad"],configuracion:["Configuración","Datos básicos de tu negocio"],mas:["Más","Opciones adicionales"]
+  inicio:["Inicio","Resumen de tu negocio"],
+  ventas:["Nueva venta","Busca productos y cobra"],
+  historial:["Historial de ventas","Consulta y administra las ventas"],
+  inventario:["Inventario","Productos y existencias"],
+  apartados:["Apartados","Pedidos, abonos y entregas"],
+  clientes:["Clientes","Tus clientes y su historial"],
+  reportes:["Reportes","Resumen de ventas y rentabilidad"],
+  configuracion:["Configuración","Datos básicos de tu negocio"],
+  mas:["Más","Opciones adicionales"]
 };
 function openModal(title,content){
   document.getElementById("modalRoot").innerHTML=`<div class="modal-backdrop" onclick="if(event.target===this)closeModal()"><div class="modal"><div class="modal-head"><h2>${title}</h2><button class="close-btn" onclick="closeModal()">×</button></div>${content}</div></div>`;
@@ -61,16 +69,16 @@ function renderView(view="inicio") {
   const root =
     document.getElementById("appView");
 
-  const renderers = {
-    inicio: renderInicio,
-    ventas: renderVentas,
-    inventario: renderInventario,
-    apartados: renderApartados,
-    clientes: renderClientes,
-    reportes: renderReportes,
-    configuracion: renderConfiguracion
-  };
-
+const renderers = {
+  inicio: renderInicio,
+  ventas: renderVentas,
+  historial: renderHistorialVentas,
+  inventario: renderInventario,
+  apartados: renderApartados,
+  clientes: renderClientes,
+  reportes: renderReportes,
+  configuracion: renderConfiguracion
+};
   root.innerHTML =
     renderers[view]
       ? renderers[view]()
@@ -85,12 +93,12 @@ function configurarMenuPorRol() {
     return;
   }
 
-  const vistasAdministrativas = [
-    "clientes",
-    "reportes",
-    "configuracion"
-  ];
-
+const vistasAdministrativas = [
+  "clientes",
+  "historial",
+  "reportes",
+  "configuracion"
+];
   document.querySelectorAll(
     "#sideNav [data-view]"
   ).forEach(button => {
@@ -134,7 +142,11 @@ function renderInicio() {
     new Date().toISOString().slice(0, 10);
 
   const todaySales =
-    DB.ventas.filter(v => v.fecha === today);
+  DB.ventas.filter(
+    v =>
+      v.fecha === today &&
+      v.estado !== "anulada"
+  );
 
   const sales =
     todaySales.reduce(
@@ -581,11 +593,9 @@ document.addEventListener("submit",e=>{if(e.target.id==="settingsForm"){e.preven
 document.addEventListener(
   "usuarioAutenticado",
   function () {
-
     configurarMenuPorRol();
-
+    configurarSidebarRetractil();
     renderView("inicio");
-
   }
 );
 
@@ -594,4 +604,27 @@ const btnCerrarSesion =
 
 if (btnCerrarSesion) {
   btnCerrarSesion.onclick = cerrarSesion;
+}
+
+function configurarSidebarRetractil() {
+  const sidebar = document.querySelector(".sidebar");
+  const toggle = document.getElementById("sidebarToggle");
+
+  if (!sidebar || !toggle) return;
+
+  toggle.onclick = function () {
+
+    sidebar.classList.toggle("collapsed");
+
+    const estaContraido =
+      sidebar.classList.contains("collapsed");
+
+    toggle.textContent =
+      estaContraido ? "▶" : "◀";
+
+    toggle.title =
+      estaContraido
+        ? "Expandir menú"
+        : "Contraer menú";
+  };
 }
