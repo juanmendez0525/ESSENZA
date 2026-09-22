@@ -20,226 +20,133 @@ function removeFromCart(id){
 }
 function cartTotal(){return cart.reduce((s,i)=>s+i.precio*i.cantidad,0)}
 function finalizeSale(){
-
   if(!cart.length){
     toast("Agrega productos a la venta");
     return;
   }
-
   openModal(
     "Finalizar venta",
-
     `
-
     <form id="saleForm">
-
-      <!-- CLIENTE -->
-
-      <div class="card" style="box-shadow:none;background:var(--soft)">
-
-        <div class="section-head">
-
-          <h3>Cliente</h3>
-
-          <button
-            type="button"
-            class="secondary-btn"
-            id="btnConsumidorFinal"
+      <div class="form-grid">
+        <!-- CLIENTE -->
+        <div class="field full">
+          <label>
+            Buscar cliente por número de identificación
+          </label>
+          <input
+            class="input"
+            id="clienteIdentificacion"
+            name="identificacion"
+            placeholder="Escribe el número de identificación..."
+            autocomplete="off"
           >
-            Usar consumidor final
-          </button>
-
-        </div>
-
-
-        <div class="form-grid">
-
-          <div class="field">
-
-            <label>
-              Número de identificación
-            </label>
-
-            <div class="row">
-
-              <input
-                class="input"
-                type="text"
-                id="identificacionCliente"
-                name="identificacion"
-                placeholder="Ej: 1090123456"
-              >
-
-              <button
-                type="button"
-                class="secondary-btn"
-                id="btnBuscarCliente"
-              >
-                🔍 Buscar
-              </button>
-
-            </div>
-
+          <div
+            id="clienteResultado"
+            class="small"
+            style="margin-top:8px;"
+          >
+            Consumidor final
           </div>
-
-
-          <div class="field">
-
-            <label>
-              Cliente encontrado
-            </label>
-
-            <input
-              class="input"
-              type="text"
-              id="nombreCliente"
-              name="cliente"
-              value="Consumidor final"
-              readonly
-            >
-
-          </div>
-
+          <input
+            type="hidden"
+            id="clienteId"
+            name="clienteId"
+            value=""
+          >
         </div>
-
-
-        <div
-          id="datosClienteVenta"
-          class="small mt"
-        >
-          Puedes buscar un cliente registrado por su número de identificación.
-        </div>
-
-      </div>
-
-
-      <!-- PAGO Y DESCUENTO -->
-
-      <div class="form-grid mt">
-
+        <!-- MÉTODO DE PAGO -->
         <div class="field">
-
           <label>
             Método de pago
           </label>
-
           <select
             class="select"
             name="metodo"
           >
-
             <option>Efectivo</option>
             <option>Nequi</option>
             <option>Daviplata</option>
             <option>Transferencia</option>
             <option>Tarjeta</option>
-
           </select>
-
         </div>
-
-
+        <!-- DESCUENTO -->
         <div class="field">
-
           <label>
             Descuento
           </label>
-
           <input
             class="input"
             type="number"
-            id="descuentoVenta"
             name="descuento"
             value="0"
             min="0"
-            step="1"
+            step="0.01"
           >
-
         </div>
-
-
+        <!-- DESCRIPCIÓN DEL DESCUENTO -->
         <div class="field full">
-
-          <label>
+          <label id="labelDescripcionDescuento">
             Descripción del descuento
           </label>
-
-          <textarea
+          <input
             class="input"
-            id="descripcionDescuento"
+            type="text"
             name="descripcionDescuento"
-            rows="2"
-            placeholder="Ej: Descuento por cliente frecuente, promoción, producto con detalle..."
-          ></textarea>
-
-          <div class="small">
-            La descripción es obligatoria si aplicas un descuento.
-          </div>
-
+            placeholder="Ej: Descuento por promoción, cliente frecuente..."
+          >
         </div>
-
       </div>
-
-
-      <!-- RESUMEN -->
-
+      <!-- RESUMEN DE LA VENTA -->
       <div
         class="card mt"
         style="box-shadow:none;background:var(--soft)"
       >
-
-        <div class="small">
-          Total productos
+        <div class="row space">
+          <span>
+            Subtotal
+          </span>
+          <b id="saleSubtotal">
+            ${money(cartTotal())}
+          </b>
         </div>
-
         <div
-          id="subtotalVenta"
-          class="kpi"
+          class="row space"
+          style="margin-top:10px;"
         >
-          ${money(cartTotal())}
-        </div>
-
-
-        <div
-          class="row space mt"
-          id="filaDescuentoVenta"
-          style="display:none"
-        >
-
           <span>
             Descuento
           </span>
-
-          <b id="valorDescuentoVenta">
-            $0
+          <b id="saleDiscount">
+            ${money(0)}
           </b>
-
         </div>
-
-
-        <div class="row space mt">
-
-          <span class="kpi" style="font-size:18px">
+        <div
+          class="row space"
+          style="
+            margin-top:14px;
+            padding-top:12px;
+            border-top:1px solid rgba(0,0,0,.12);
+          "
+        >
+          <span
+            class="kpi"
+            style="font-size:18px"
+          >
             TOTAL
           </span>
-
           <b
-            id="totalVenta"
+            id="saleTotal"
             class="kpi"
             style="font-size:22px"
           >
             ${money(cartTotal())}
           </b>
-
         </div>
-
       </div>
-
-
       <!-- BOTONES -->
-
       <div class="modal-actions">
-
         <button
           type="button"
           class="secondary-btn"
@@ -247,454 +154,321 @@ function finalizeSale(){
         >
           Cancelar
         </button>
-
         <button
           class="primary-btn"
         >
           Confirmar venta
         </button>
-
       </div>
-
     </form>
-
     `
   );
-
-
-  // ==========================================
-  // ELEMENTOS
-  // ==========================================
-
-  const saleForm =
-    document.getElementById("saleForm");
-
-  const inputIdentificacion =
+  // =========================
+  // ELEMENTOS DEL FORMULARIO
+  // =========================
+  const inputCliente =
     document.getElementById(
-      "identificacionCliente"
+      "clienteIdentificacion"
     );
-
-  const inputNombre =
+  const resultadoCliente =
     document.getElementById(
-      "nombreCliente"
+      "clienteResultado"
     );
-
-  const datosCliente =
+  const clienteId =
     document.getElementById(
-      "datosClienteVenta"
+      "clienteId"
     );
-
   const inputDescuento =
-    document.getElementById(
-      "descuentoVenta"
+    document.querySelector(
+      '#saleForm input[name="descuento"]'
     );
-
-  const inputDescripcion =
-    document.getElementById(
-      "descripcionDescuento"
+  const campoDescripcion =
+    document.querySelector(
+      '#saleForm input[name="descripcionDescuento"]'
     );
-
-  const filaDescuento =
+  const labelDescripcion =
     document.getElementById(
-      "filaDescuentoVenta"
+      "labelDescripcionDescuento"
     );
-
-  const valorDescuento =
+  const saleDiscount =
     document.getElementById(
-      "valorDescuentoVenta"
+      "saleDiscount"
     );
-
-  const totalVenta =
+  const saleTotal =
     document.getElementById(
-      "totalVenta"
+      "saleTotal"
     );
-
-
-  // ==========================================
+  const subtotalVenta =
+    cartTotal();
+  // =========================
   // BUSCAR CLIENTE
-  // ==========================================
-
-  document
-    .getElementById("btnBuscarCliente")
-    .onclick = function(){
-
+  // =========================
+  inputCliente.addEventListener(
+    "input",
+    function(){
       const identificacion =
-        inputIdentificacion.value
-          .trim()
-          .toLowerCase();
-
+        this.value.trim();
+      clienteId.value = "";
       if(!identificacion){
-
-        toast(
-          "Escribe el número de identificación."
-        );
-
-        inputIdentificacion.focus();
-
+        resultadoCliente.innerHTML =
+          `
+          <div class="small">
+            Consumidor final
+          </div>
+          `;
         return;
       }
-
-
       const cliente =
         DB.clientes.find(
           c =>
             String(
               c.identificacion || ""
-            )
-            .trim()
-            .toLowerCase()
-            === identificacion
+            ).trim() === identificacion
         );
-
-
-      if(!cliente){
-
-        inputNombre.value =
-          "Consumidor final";
-
-        datosCliente.innerHTML =
+      if(cliente){
+        clienteId.value =
+          cliente.id;
+        resultadoCliente.innerHTML =
           `
-          <span style="color:#b45309">
-            ⚠️ No encontramos un cliente con esa identificación.
-          </span>
+          <div
+            class="card"
+            style="
+              margin-top:10px;
+              padding:12px;
+              box-shadow:none;
+              background:var(--soft);
+            "
+          >
+            <div
+              class="badge success"
+              style="
+                display:inline-block;
+                margin-bottom:10px;
+              "
+            >
+              ✓ Cliente encontrado
+            </div>
+            <div class="small">
+              <b>Nombre:</b>
+              ${cliente.nombre}
+            </div>
+            <div class="small">
+              <b>Identificación:</b>
+              ${cliente.identificacion || "—"}
+            </div>
+            <div class="small">
+              <b>Teléfono:</b>
+              ${cliente.telefono || "—"}
+            </div>
+            <div class="small">
+              <b>Correo:</b>
+              ${cliente.email || "—"}
+            </div>
+          </div>
           `;
-
-        toast(
-          "Cliente no encontrado."
-        );
-
-        return;
+      } else {
+        resultadoCliente.innerHTML =
+          `
+          <div
+            style="
+              margin-top:8px;
+              color:#b45309;
+            "
+          >
+            No se encontró un cliente con esa identificación.
+          </div>
+          <button
+            type="button"
+            class="secondary-btn"
+            style="margin-top:8px;"
+            onclick="
+              document.getElementById('clienteIdentificacion').value='';
+              document.getElementById('clienteId').value='';
+              document.getElementById('clienteResultado').innerHTML='Consumidor final';
+              document.getElementById('clienteIdentificacion').focus();
+            "
+          >
+            Usar consumidor final
+          </button>
+          `;
       }
-
-
-      inputNombre.value =
-        cliente.nombre || "";
-
-
-      datosCliente.innerHTML =
-        `
-        <div>
-          <b>Cliente encontrado</b>
-        </div>
-
-        <div class="small">
-          Teléfono:
-          ${cliente.telefono || "No registrado"}
-        </div>
-
-        <div class="small">
-          Correo:
-          ${cliente.email || "No registrado"}
-        </div>
-        `;
-
-      toast(
-        "Cliente encontrado."
-      );
-
-    };
-
-
-  // ==========================================
-  // CONSUMIDOR FINAL
-  // ==========================================
-
-  document
-    .getElementById("btnConsumidorFinal")
-    .onclick = function(){
-
-      inputIdentificacion.value = "";
-
-      inputNombre.value =
-        "Consumidor final";
-
-      datosCliente.innerHTML =
-        `
-        Puedes buscar un cliente registrado por su número de identificación.
-        `;
-
-      inputIdentificacion.focus();
-
-    };
-
-
-  // ==========================================
-  // ACTUALIZAR TOTAL
-  // ==========================================
-
-  function actualizarTotalVenta(){
-
-    const subtotal =
-      cartTotal();
-
-    let descuento =
+    }
+  );
+  // =========================
+  // ACTUALIZAR TOTALES
+  // =========================
+  function actualizarTotales(){
+    const descuento =
       Number(
         inputDescuento.value || 0
       );
-
-
-    if(descuento < 0){
-
-      descuento = 0;
-
-      inputDescuento.value = 0;
-
-    }
-
-
-    if(descuento > subtotal){
-
-      descuento = subtotal;
-
-      inputDescuento.value =
-        subtotal;
-
-    }
-
-
-    const total =
+    const descuentoValido =
       Math.max(
         0,
-        subtotal - descuento
+        Math.min(
+          descuento,
+          subtotalVenta
+        )
       );
-
-
-    if(descuento > 0){
-
-      filaDescuento.style.display =
-        "flex";
-
-      valorDescuento.textContent =
-        "-" + money(descuento);
-
-    } else {
-
-      filaDescuento.style.display =
-        "none";
-
-    }
-
-
-    totalVenta.textContent =
+    const total =
+      subtotalVenta -
+      descuentoValido;
+    saleDiscount.textContent =
+      money(descuentoValido);
+    saleTotal.textContent =
       money(total);
-
   }
-
-
+  // =========================
+  // VALIDAR DESCRIPCIÓN
+  // =========================
+  function actualizarObligatoriedadDescuento(){
+    const descuento =
+      Number(
+        inputDescuento.value || 0
+      );
+    if(descuento > 0){
+      campoDescripcion.required =
+        true;
+      labelDescripcion.innerHTML =
+        'Descripción del descuento <span style="color:#b91c1c">*</span>';
+    } else {
+      campoDescripcion.required =
+        false;
+      labelDescripcion.textContent =
+        "Descripción del descuento";
+    }
+  }
   inputDescuento.addEventListener(
     "input",
-    actualizarTotalVenta
+    actualizarTotales
   );
-
-
-  // ==========================================
+  inputDescuento.addEventListener(
+    "input",
+    actualizarObligatoriedadDescuento
+  );
+  actualizarTotales();
+  actualizarObligatoriedadDescuento();
+  // =========================
   // GUARDAR VENTA
-  // ==========================================
-
-  saleForm.onsubmit = function(e){
-
+  // =========================
+  document.getElementById(
+    "saleForm"
+  ).onsubmit = e => {
     e.preventDefault();
-
-
     const fd =
-      new FormData(saleForm);
-
-
-    const identificacion =
-      String(
-        fd.get("identificacion") || ""
-      ).trim();
-
-
-    const cliente =
-      String(
-        fd.get("cliente") ||
-        "Consumidor final"
-      ).trim();
-
-    const clienteEncontrado =
-    DB.clientes.find(
-      c =>
-        String(c.identificacion || "").trim()
-        === identificacion
-    );
-
-
-    const descuento =
+      new FormData(e.target);
+    const desc =
       Number(
         fd.get("descuento") || 0
       );
-
-
     const descripcionDescuento =
       String(
         fd.get(
           "descripcionDescuento"
         ) || ""
       ).trim();
-
-
-    // ========================================
-    // VALIDAR DESCUENTO
-    // ========================================
-
-    if(descuento > 0){
-
-      if(!descripcionDescuento){
-
-        toast(
-          "Debes indicar el motivo del descuento."
-        );
-
-        inputDescripcion.focus();
-
-        return;
-      }
-
+    if(
+      desc > 0 &&
+      !descripcionDescuento
+    ){
+      toast(
+        "Debes indicar el motivo o descripción del descuento."
+      );
+      campoDescripcion.focus();
+      return;
     }
-
-
-    // ========================================
-    // CALCULAR TOTAL
-    // ========================================
-
-    const total =
+    const descuentoValido =
       Math.max(
         0,
-        cartTotal() - descuento
+        Math.min(
+          desc,
+          subtotalVenta
+        )
       );
-
-
-    // ========================================
+    const total =
+      subtotalVenta -
+      descuentoValido;
+    // =========================
     // CONFIRMACIÓN FINAL
-    // ========================================
-
+    // =========================
     const confirmar =
       confirm(
-
         "¿Deseas confirmar esta venta?\n\n" +
-
-        "Cliente: " +
-        cliente +
-
-        "\n" +
-
         "Total: " +
         money(total) +
-
         "\n\n" +
-
         "Una vez confirmada, se registrará " +
         "la venta y se descontarán los productos " +
         "del inventario."
-
       );
-
-
     if(!confirmar){
-
       return;
-
     }
-
-
-    // ========================================
+    // =========================
     // DESCONTAR INVENTARIO
-    // ========================================
-
+    // =========================
     cart.forEach(i => {
-
       const producto =
-        getProduct(
-          i.productoId
-        );
-
-
+        getProduct(i.productoId);
       if(producto){
-
         producto.stock -=
           i.cantidad;
-
       }
-
     });
-
-
-    // ========================================
+    // =========================
+    // OBTENER CLIENTE
+    // =========================
+    const clienteEncontrado =
+      DB.clientes.find(
+        c =>
+          String(c.id) ===
+          String(
+            fd.get("clienteId")
+          )
+      );
+    // =========================
     // CREAR VENTA
-    // ========================================
-
+    // =========================
     DB.ventas.unshift({
-
       id:
         Date.now(),
-        
       fecha:
         new Date()
           .toISOString()
           .slice(0,10),
-        
       cliente:
-        cliente,
-        
+        clienteEncontrado
+          ? clienteEncontrado.nombre
+          : "Consumidor final",
       clienteId:
-        clienteEncontrado?.id || null,
-        
+        clienteEncontrado
+          ? clienteEncontrado.id
+          : null,
       identificacionCliente:
-        identificacion,
-        
-      telefonoCliente:
-        clienteEncontrado?.telefono || "",
-        
-      direccionCliente:
-        clienteEncontrado?.direccion || "",
-        
+        clienteEncontrado
+          ? clienteEncontrado.identificacion
+          : "",
       items:
         [...cart],
-        
       descuento:
-        descuento,
-        
+        descuentoValido,
       descripcionDescuento:
         descripcionDescuento,
-        
       metodo:
         fd.get("metodo"),
-        
       total:
         total
-        
     });
-
-
     const sale =
       DB.ventas[0];
-
-
     saveData();
-
-
-    // Vaciar carrito
-
     cart = [];
-
-
-    // Cerrar formulario
-
     closeModal();
-
-
-    // Mostrar comprobante
-
     showReceipt(sale);
-
-
     toast(
       "Venta registrada correctamente"
     );
-
   };
-
 }
 function showReceipt(sale) {
 
@@ -814,46 +588,46 @@ function showReceipt(sale) {
 
         <!-- INFORMACIÓN -->
 
-        <div class="info-section">
+<div class="info-section">
 
-          <div class="client-info">
+  <div class="client-info">
 
-            <h3>
-              INF. CLIENTE:
-            </h3>
+    <h3>
+      INF. CLIENTE:
+    </h3>
 
-            <p>
-              Nombre: ${sale.cliente || "Consumidor final"}
-            </p>
+    <p>
+      Nombre: ${sale.cliente || "Consumidor final"}
+    </p>
 
-            <p>
-              Contacto: ${sale.telefonoCliente || "—"}
-            </p>
+    <p>
+      Contacto: ${sale.telefonoCliente || "—"}
+    </p>
 
-            <p>
-              Dirección: ${sale.direccionCliente || "—"}
-            </p>
+    <p>
+      Dirección: ${sale.direccionCliente || "—"}
+    </p>
 
-          </div>
+  </div>
 
 
-          <div class="receipt-info">
+  <div class="receipt-info">
 
-            <p>
-              Comprobante: ${sale.id}
-            </p>
+    <p>
+      Comprobante: ${sale.id}
+    </p>
 
-            <p>
-              Fecha: ${fecha}
-            </p>
+    <p>
+      Fecha: ${fecha}
+    </p>
 
-            <p>
-              Hora: ${hora}
-            </p>
+    <p>
+      Hora: ${hora}
+    </p>
 
-          </div>
+  </div>
 
-        </div>
+</div>
 
 
         <!-- TABLA DE PRODUCTOS -->
