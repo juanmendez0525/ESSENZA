@@ -430,32 +430,50 @@ function finalizeSale(){
     // CREAR VENTA
     // =========================
     DB.ventas.unshift({
-      id:
-        Date.now(),
+      id: Date.now(),
+        
       fecha:
         new Date()
           .toISOString()
-          .slice(0,10),
+          .slice(0, 10),
+        
       cliente:
         clienteEncontrado
           ? clienteEncontrado.nombre
           : "Consumidor final",
+        
       clienteId:
         clienteEncontrado
           ? clienteEncontrado.id
           : null,
+        
       identificacionCliente:
         clienteEncontrado
-          ? clienteEncontrado.identificacion
+          ? clienteEncontrado.identificacion || ""
           : "",
+        
+      telefonoCliente:
+        clienteEncontrado
+          ? clienteEncontrado.telefono || ""
+          : "",
+        
+      direccionCliente:
+        clienteEncontrado
+          ? clienteEncontrado.direccion || ""
+          : "",
+        
       items:
         [...cart],
+        
       descuento:
         descuentoValido,
+        
       descripcionDescuento:
         descripcionDescuento,
+        
       metodo:
         fd.get("metodo"),
+        
       total:
         total
     });
@@ -588,46 +606,46 @@ function showReceipt(sale) {
 
         <!-- INFORMACIÓN -->
 
-<div class="info-section">
+        <div class="info-section">
 
-  <div class="client-info">
+          <div class="client-info">
 
-    <h3>
-      INF. CLIENTE:
-    </h3>
+            <h3>
+              INF. CLIENTE:
+            </h3>
+            
+            <p>
+              Nombre: ${sale.cliente || "Consumidor final"}
+            </p>
+            
+            <p>
+              Contacto: ${sale.telefonoCliente || "—"}
+            </p>
+            
+            <p>
+              Dirección: ${sale.direccionCliente || "—"}
+            </p>
+            
+          </div>
 
-    <p>
-      Nombre: ${sale.cliente || "Consumidor final"}
-    </p>
 
-    <p>
-      Contacto: ${sale.telefonoCliente || "—"}
-    </p>
+          <div class="receipt-info">
 
-    <p>
-      Dirección: ${sale.direccionCliente || "—"}
-    </p>
+            <p>
+              Comprobante: ${sale.id}
+            </p>
 
-  </div>
+            <p>
+              Fecha: ${fecha}
+            </p>
 
+            <p>
+              Hora: ${hora}
+            </p>
 
-  <div class="receipt-info">
+          </div>
 
-    <p>
-      Comprobante: ${sale.id}
-    </p>
-
-    <p>
-      Fecha: ${fecha}
-    </p>
-
-    <p>
-      Hora: ${hora}
-    </p>
-
-  </div>
-
-</div>
+        </div>
 
 
         <!-- TABLA DE PRODUCTOS -->
