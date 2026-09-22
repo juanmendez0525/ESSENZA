@@ -10,10 +10,31 @@ const demoData = {
     {id:8,nombre:"Paleta Nude",marca:"Revolution",categoria:"Sombras",referencia:"REV-ND-08",precioCompra:45000,precioVenta:65000,stock:5,stockMinimo:2,img:"https://images.unsplash.com/photo-1516975080664-ed2fc6a32937?auto=format&fit=crop&w=500&q=80"}
   ],
   clientes: [
-    {id:1,nombre:"Laura Gómez",telefono:"3001234567",email:"laura@email.com"},
-    {id:2,nombre:"María Pérez",telefono:"3017654321",email:""},
-    {id:3,nombre:"Ana Martínez",telefono:"3155551212",email:"ana@email.com"}
-  ],
+  {
+    id: 1,
+    nombre: "Laura Gómez",
+    identificacion: "1090123456",
+    telefono: "3001234567",
+    direccion: "Calle 10 # 20-30",
+    email: "laura@email.com"
+  },
+  {
+    id: 2,
+    nombre: "María Pérez",
+    identificacion: "1090765432",
+    telefono: "3017654321",
+    direccion: "Carrera 15 # 8-25",
+    email: ""
+  },
+  {
+    id: 3,
+    nombre: "Ana Martínez",
+    identificacion: "1090555121",
+    telefono: "3155551212",
+    direccion: "Calle 25 # 12-40",
+    email: "ana@email.com"
+  }
+],
   ventas: [
     {id:101,fecha:"2026-09-15",cliente:"Consumidor final",items:[{productoId:1,cantidad:2,precio:35000},{productoId:6,cantidad:1,precio:33000}],descuento:0,metodo:"Nequi",total:103000},
     {id:102,fecha:"2026-09-15",cliente:"Laura Gómez",items:[{productoId:4,cantidad:1,precio:92000}],descuento:2000,metodo:"Efectivo",total:90000},
