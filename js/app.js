@@ -721,34 +721,21 @@ if (btnCerrarSesion) {
 }
 
 function openEmpleadoModal() {
-  const modal = document.getElementById("modal");
 
-  modal.innerHTML = `
-    <div class="modal-backdrop" onclick="closeModal()"></div>
+  openModal(
+    "Crear empleado",
+    `
+      <p class="small">
+        Registra los datos personales del empleado.
+      </p>
 
-    <div class="modal-card">
-      <div class="modal-head">
-        <div>
-          <h2>Crear empleado</h2>
-          <p class="small">
-            Registra los datos personales del empleado.
-          </p>
-        </div>
-
-        <button
-          class="icon-btn"
-          onclick="closeModal()"
-          type="button"
-        >
-          ×
-        </button>
-      </div>
-
-      <div class="form-grid">
+      <div class="form-grid mt">
 
         <div class="field">
           <label>Nombre completo</label>
+
           <input
+            class="input"
             id="empleadoNombre"
             type="text"
             placeholder="Nombre completo"
@@ -758,7 +745,9 @@ function openEmpleadoModal() {
 
         <div class="field">
           <label>Identificación</label>
+
           <input
+            class="input"
             id="empleadoIdentificacion"
             type="text"
             placeholder="Número de identificación"
@@ -768,7 +757,9 @@ function openEmpleadoModal() {
 
         <div class="field">
           <label>Teléfono</label>
+
           <input
+            class="input"
             id="empleadoTelefono"
             type="text"
             placeholder="Número de teléfono"
@@ -778,7 +769,9 @@ function openEmpleadoModal() {
 
         <div class="field">
           <label>Correo electrónico</label>
+
           <input
+            class="input"
             id="empleadoCorreo"
             type="email"
             placeholder="correo@ejemplo.com"
@@ -789,17 +782,25 @@ function openEmpleadoModal() {
       </div>
 
       <div class="mt">
+
         <label class="check-row">
+
           <input
             id="empleadoActivo"
             type="checkbox"
             checked
           >
-          <span>Empleado activo</span>
+
+          <span>
+            Empleado activo
+          </span>
+
         </label>
+
       </div>
 
-      <div class="modal-actions">
+      <div class="modal-actions mt">
+
         <button
           class="secondary-btn"
           onclick="closeModal()"
@@ -815,11 +816,11 @@ function openEmpleadoModal() {
         >
           Guardar empleado
         </button>
+
       </div>
-    </div>
-  `;
-  
-  modal.classList.add("open");
+    `
+  );
+
 }
 async function guardarEmpleado() {
   const nombre = document
