@@ -473,7 +473,7 @@ function finalizeSale(){
   // =========================
   document.getElementById(
     "saleForm"
-  ).onsubmit = e => {
+  ).onsubmit = async  e => {
     e.preventDefault();
     const fd =
       new FormData(e.target);
@@ -527,14 +527,41 @@ function finalizeSale(){
     // =========================
     // DESCONTAR INVENTARIO
     // =========================
-    cart.forEach(i => {
-      const producto =
-        getProduct(i.productoId);
-      if(producto){
-        producto.stock -=
-          i.cantidad;
+    for (const i of cart) {
+
+      const producto = getProduct(i.productoId);
+
+      if (!producto) {
+        toast("No se encontró uno de los productos.");
+        return;
       }
-    });
+    
+      const nuevoStock = producto.stock - i.cantidad;
+    
+      if (nuevoStock < 0) {
+        toast(`No hay suficiente stock de ${producto.nombre}.`);
+        return;
+      }
+    
+      const { error } = await supabaseClient
+        .from("productos")
+        .update({
+          stock: nuevoStock,
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", producto.id);
+      
+      if (error) {
+        console.error("Error actualizando stock:", error);
+        toast(`Error actualizando stock: ${error.message}`);
+        return;
+      }
+    }
+
+    await cargarProductosDesdeSupabase();
+    renderView("ventas");
+
+
     // =========================
     // OBTENER CLIENTE
     // =========================
@@ -601,11 +628,16 @@ function finalizeSale(){
       DB.ventas[0];
     saveData();
     cart = [];
+
     closeModal();
+
+    await cargarProductosDesdeSupabase();
+
+    renderView("ventas");
+
     showReceipt(sale);
-    toast(
-      "Venta registrada correctamente"
-    );
+
+    toast("Venta registrada correctamente");
   };
 }
 function showReceipt(sale) {
@@ -907,17 +939,241 @@ function showReceipt(sale) {
   );
 
 }
+function filtrarProductosVenta(texto){
+
+  const q = texto.toLowerCase().trim();
+
+  const products = DB.productos.filter(p =>
+    `${p.nombre} ${p.marca}`.toLowerCase().includes(q)
+  );
+
+  const contenedor = document.getElementById("ventaProductos");
+
+  if (!contenedor) return;
+
+  contenedor.innerHTML = products.map(p => `
+    <div class="product-card">
+
+      <img
+        src="${p.img}"
+        onerror="this.style.visibility='hidden'"
+      >
+
+      <div class="pc-body">
+
+        <h3>${p.nombre}</h3>
+
+        <div class="small">
+          ${p.marca} · Stock ${p.stock}
+        </div>
+
+        <div class="price">
+          ${money(p.precioVenta)}
+        </div>
+
+        <button
+          class="primary-btn"
+          style="width:100%"
+          onclick="addToCart('${p.id}')"
+          ${p.stock <= 0 ? "disabled" : ""}
+        >
+          Agregar
+        </button>
+
+      </div>
+
+    </div>
+  `).join("");
+}
 function renderVentas(){
-  const q=(document.getElementById("saleSearch")?.value||"").toLowerCase();
-  const products=DB.productos.filter(p=>`${p.nombre} ${p.marca}`.toLowerCase().includes(q));
-  return `<div class="two-col grid">
-    <div class="card"><div class="section-head"><h2>Productos</h2><span class="badge info">${cart.length} en carrito</span></div>
-      <input id="saleSearch" oninput="renderView('ventas')" class="input" placeholder="🔍 Buscar producto..." value="${q}">
-      <div class="product-grid mt">${products.map(p=>`<div class="product-card"><img src="${p.img}" onerror="this.style.visibility='hidden'"><div class="pc-body"><h3>${p.nombre}</h3><div class="small">${p.marca} · Stock ${p.stock}</div><div class="price">${money(p.precioVenta)}</div><button class="primary-btn" style="width:100%" onclick="addToCart(${p.id})" ${p.stock<=0?"disabled":""}>Agregar</button></div></div>`).join("")}</div>
+  const q = (
+    document.getElementById("saleSearch")?.value || ""
+  ).toLowerCase();
+
+  const products = DB.productos.filter(
+    p => `${p.nombre} ${p.marca}`.toLowerCase().includes(q)
+  );
+
+  return `
+    <div class="two-col grid">
+
+      <div class="card">
+
+        <div class="section-head">
+          <h2>Productos</h2>
+          <span class="badge info">
+            ${cart.length} en carrito
+          </span>
+        </div>
+
+        <input
+          id="saleSearch"
+          oninput="filtrarProductosVenta(this.value)"
+          class="input"
+          placeholder="🔍 Buscar producto..."
+          value="${q}"
+        >
+
+        <div id="ventaProductos" class="product-grid mt">
+
+          ${products.map(p => `
+
+            <div class="product-card">
+
+              <img
+                src="${p.img}"
+                onerror="this.style.visibility='hidden'"
+              >
+
+              <div class="pc-body">
+
+                <h3>${p.nombre}</h3>
+
+                <div class="small">
+                  ${p.marca} · Stock ${p.stock}
+                </div>
+
+                <div class="price">
+                  ${money(p.precioVenta)}
+                </div>
+
+                <button
+                  class="primary-btn"
+                  style="width:100%"
+                  onclick="addToCart('${p.id}')"
+                  ${p.stock <= 0 ? "disabled" : ""}
+                >
+                  Agregar
+                </button>
+
+              </div>
+
+            </div>
+
+          `).join("")}
+
+        </div>
+
+      </div>
+
+
+      <div class="card">
+
+        <div class="section-head">
+
+          <h2>Carrito</h2>
+
+          <button
+            class="danger-btn"
+            onclick="cart=[];renderView('ventas')"
+          >
+            Vaciar
+          </button>
+
+        </div>
+
+
+        ${
+          cart.length
+
+          ? cart.map(i => {
+
+              const p = getProduct(i.productoId);
+
+              return `
+
+                <div class="list-item">
+
+                  <div>
+
+                    <b>${p.nombre}</b>
+
+                    <div class="small">
+                      ${money(i.precio)} c/u
+                    </div>
+
+                  </div>
+
+                  <div class="row">
+
+                    <button
+                      class="secondary-btn"
+                      onclick="changeCart('${p.id}',-1)"
+                    >
+                      −
+                    </button>
+
+                    <b>${i.cantidad}</b>
+
+                    <button
+                      class="secondary-btn"
+                      onclick="changeCart('${p.id}',1)"
+                    >
+                      +
+                    </button>
+
+                    <button
+                      class="danger-btn"
+                      onclick="removeFromCart('${p.id}')"
+                      title="Eliminar del carrito"
+                    >
+                      🗑️
+                    </button>
+
+                  </div>
+
+                </div>
+
+              `;
+
+            }).join("")
+
+          : `
+              <div class="empty">
+                El carrito está vacío.<br>
+                Agrega productos para comenzar.
+              </div>
+            `
+        }
+
+
+        <div class="mt">
+
+          <div class="row space">
+            <span>Subtotal</span>
+            <b>${money(cartTotal())}</b>
+          </div>
+
+          <div class="row space mt">
+
+            <span
+              class="kpi"
+              style="font-size:18px"
+            >
+              TOTAL
+            </span>
+
+            <b
+              class="kpi"
+              style="font-size:22px"
+            >
+              ${money(cartTotal())}
+            </b>
+
+          </div>
+
+          <button
+            class="primary-btn mt"
+            style="width:100%"
+            onclick="finalizeSale()"
+          >
+            Continuar al pago
+          </button>
+
+        </div>
+
+      </div>
+
     </div>
-    <div class="card"><div class="section-head"><h2>Carrito</h2><button class="danger-btn" onclick="cart=[];renderView('ventas')">Vaciar</button></div>
-      ${cart.length?cart.map(i=>{const p=getProduct(i.productoId);return `<div class="list-item"><div><b>${p.nombre}</b><div class="small">${money(i.precio)} c/u</div></div><div class="row">   <button class="secondary-btn" onclick="changeCart(${p.id},-1)">−</button>   <b>${i.cantidad}</b>   <button class="secondary-btn" onclick="changeCart(${p.id},1)">+</button>   <button     class="danger-btn"     onclick="removeFromCart(${p.id})"     title="Eliminar del carrito"   >     🗑️   </button> </div></div>`}).join(""):`<div class="empty">El carrito está vacío.<br>Agrega productos para comenzar.</div>`}
-      <div class="mt"><div class="row space"><span>Subtotal</span><b>${money(cartTotal())}</b></div><div class="row space mt"><span class="kpi" style="font-size:18px">TOTAL</span><b class="kpi" style="font-size:22px">${money(cartTotal())}</b></div><button class="primary-btn mt" style="width:100%" onclick="finalizeSale()">Continuar al pago</button></div>
-    </div>
-  </div>`;
+  `;
 }

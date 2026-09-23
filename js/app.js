@@ -70,6 +70,20 @@ function renderView(view="inicio") {
     configuracion: renderConfiguracion
   };
 
+  if (view === "inventario") {
+    cargarProductosDesdeSupabase().then(() => { 
+    root.innerHTML = renderInventario();
+    });
+    return;
+  }
+
+  if (view === "ventas") {
+    cargarProductosDesdeSupabase().then(() => {
+      root.innerHTML = renderVentas();
+    });
+    return;
+  }
+
   root.innerHTML =
     renderers[view]
       ? renderers[view]()
@@ -471,18 +485,130 @@ function renderInicio() {
   `;
 }
 function renderConfiguracion(){
-  const c=DB.configuracion;
-  return `<div class="card"><h2>Información del negocio</h2><p class="small">Estos datos aparecerán en los comprobantes.</p><form id="settingsForm" class="mt"><div class="form-grid">
-  <div class="field"><label>Nombre del negocio</label><input class="input" name="negocio" value="${c.negocio}"></div>
-  <div class="field"><label>NIT</label><input class="input" name="nit" value="${c.nit||""}"></div>
-  <div class="field"><label>Teléfono</label><input class="input" name="telefono" value="${c.telefono||""}"></div>
-  <div class="field"><label>Dirección</label><input class="input" name="direccion" value="${c.direccion||""}"></div>
-  </div><button class="primary-btn mt">Guardar cambios</button></form></div>
-  <div class="card mt">
-  <h2>Datos del prototipo</h2>
-  <p class="small">Esta versión guarda la información en el navegador mediante localStorage. No es todavía una base de datos Android ni facturación electrónica DIAN.</p>
-  <button class="danger-btn mt" onclick="resetDemo()">Restablecer datos de demostración</button>
-  </div>`;
+
+  const c = DB.configuracion;
+
+  return `
+
+    <!-- INFORMACIÓN DEL NEGOCIO -->
+    <div class="card">
+
+      <h2>Información del negocio</h2>
+
+      <p class="small">
+        Estos datos aparecerán en los comprobantes.
+      </p>
+
+      <form id="settingsForm" class="mt">
+
+        <div class="form-grid">
+
+          <div class="field">
+            <label>Nombre del negocio</label>
+            <input
+              class="input"
+              name="negocio"
+              value="${c.negocio}"
+            >
+          </div>
+
+          <div class="field">
+            <label>NIT</label>
+            <input
+              class="input"
+              name="nit"
+              value="${c.nit || ""}"
+            >
+          </div>
+
+          <div class="field">
+            <label>Teléfono</label>
+            <input
+              class="input"
+              name="telefono"
+              value="${c.telefono || ""}"
+            >
+          </div>
+
+          <div class="field">
+            <label>Dirección</label>
+            <input
+              class="input"
+              name="direccion"
+              value="${c.direccion || ""}"
+            >
+          </div>
+
+        </div>
+
+        <button class="primary-btn mt">
+          Guardar cambios
+        </button>
+
+      </form>
+
+    </div>
+
+
+    <!-- EMPLEADOS -->
+    <div class="card mt">
+
+      <div class="section-head">
+
+        <div>
+          <h2>Empleados</h2>
+
+          <p class="small">
+            Administra las cuentas y datos personales de los empleados.
+          </p>
+        </div>
+
+        <button
+          class="primary-btn"
+          onclick="openEmpleadoModal()"
+        >
+          + Crear empleado
+        </button>
+
+      </div>
+
+      <div class="empty mt">
+
+        <p>
+          Aún no se han cargado los empleados.
+        </p>
+
+        <p class="small">
+          Aquí aparecerán las cuentas de empleados
+          creadas por el administrador.
+        </p>
+
+      </div>
+
+    </div>
+
+
+    <!-- DATOS DEL PROTOTIPO -->
+    <div class="card mt">
+
+      <h2>Datos del prototipo</h2>
+
+      <p class="small">
+        Esta versión guarda la información en el navegador
+        mediante localStorage. No es todavía una base de datos
+        Android ni facturación electrónica DIAN.
+      </p>
+
+      <button
+        class="danger-btn mt"
+        onclick="resetDemo()"
+      >
+        Restablecer datos de demostración
+      </button>
+
+    </div>
+
+  `;
 }
 function resetDemo(){if(confirm("¿Restablecer todos los datos de demostración?")){localStorage.removeItem("makeupAppData");DB=loadData();cart=[];renderView("inicio");toast("Datos restaurados")}}
 async function cerrarSesion() {
@@ -592,6 +718,210 @@ const btnCerrarSesion =
 
 if (btnCerrarSesion) {
   btnCerrarSesion.onclick = cerrarSesion;
+}
+
+function openEmpleadoModal(){
+
+  openModal(`
+    <div class="modal-head">
+      <div>
+        <h2>Crear empleado</h2>
+        <p class="small">
+          Registra los datos personales y de acceso del empleado.
+        </p>
+      </div>
+
+      <button
+        class="icon-btn"
+        onclick="closeModal()"
+      >
+        ✕
+      </button>
+    </div>
+
+    <form id="empleadoForm" class="mt">
+
+      <div class="form-grid">
+
+        <div class="field">
+          <label>Nombre completo</label>
+          <input
+            class="input"
+            name="nombre"
+            required
+            autocomplete="name"
+            placeholder="Ej. María Pérez"
+          >
+        </div>
+
+        <div class="field">
+          <label>Identificación</label>
+          <input
+            class="input"
+            name="identificacion"
+            required
+            placeholder="Número de identificación"
+          >
+        </div>
+
+        <div class="field">
+          <label>Teléfono</label>
+          <input
+            class="input"
+            name="telefono"
+            required
+            placeholder="Ej. 300 123 4567"
+          >
+        </div>
+
+        <div class="field">
+          <label>Correo electrónico</label>
+          <input
+            class="input"
+            type="email"
+            name="email"
+            required
+            autocomplete="email"
+            placeholder="empleado@correo.com"
+          >
+        </div>
+
+        <div class="field">
+          <label>Contraseña</label>
+          <input
+            class="input"
+            type="password"
+            name="password"
+            required
+            autocomplete="new-password"
+            placeholder="Contraseña"
+          >
+        </div>
+
+        <div class="field">
+          <label>Confirmar contraseña</label>
+          <input
+            class="input"
+            type="password"
+            name="passwordConfirm"
+            required
+            autocomplete="new-password"
+            placeholder="Repite la contraseña"
+          >
+        </div>
+
+      </div>
+
+      <div class="row end mt">
+
+        <button
+          type="button"
+          class="secondary-btn"
+          onclick="closeModal()"
+        >
+          Cancelar
+        </button>
+
+        <button
+          type="submit"
+          class="primary-btn"
+        >
+          Crear empleado
+        </button>
+
+      </div>
+
+    </form>
+  `);
+
+  document.getElementById("empleadoForm").onsubmit = async e => {
+
+    e.preventDefault();
+
+    const fd = new FormData(e.target);
+
+    const nombre = String(fd.get("nombre") || "").trim();
+    const identificacion = String(fd.get("identificacion") || "").trim();
+    const telefono = String(fd.get("telefono") || "").trim();
+    const email = String(fd.get("email") || "").trim();
+    const password = String(fd.get("password") || "");
+    const passwordConfirm = String(
+      fd.get("passwordConfirm") || ""
+    );
+
+    if (password !== passwordConfirm) {
+      toast("Las contraseñas no coinciden.");
+      return;
+    }
+
+    if (password.length < 6) {
+      toast("La contraseña debe tener al menos 6 caracteres.");
+      return;
+    }
+
+    /*
+      Por ahora NO creamos la cuenta.
+
+      Primero vamos a comprobar que el formulario
+      funciona correctamente.
+    */
+
+    const { data, error } = await supabaseClient
+      .from("empleados")
+      .insert({
+        nombre,
+        identificacion,
+        telefono,
+        correo: email,
+        rol: "empleado",
+        activo: true
+      })
+      .select()
+      .single();
+    
+    if (error) {
+      console.error("Error creando empleado:", error);
+    
+      toast(
+        error.message ||
+        "No se pudo guardar el empleado."
+      );
+    
+      return;
+    }
+    
+    console.log("Empleado creado:", data);
+    
+    toast("Empleado guardado correctamente.");
+    
+    closeModal();
+
+    if (error) {
+      console.error("Error creando empleado:", error);
+    
+      toast(
+        error.message ||
+        "No se pudo crear el empleado."
+      );
+    
+      return;
+    }
+
+    if (!data?.ok) {
+      toast(
+        data?.error ||
+        "No se pudo crear el empleado."
+      );
+    
+      return;
+    }
+
+    toast("Empleado creado correctamente.");
+
+    closeModal();
+
+  };
+
 }
 
 function configurarSidebarRetractil() {
