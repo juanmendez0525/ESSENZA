@@ -31,16 +31,37 @@ function finalizeSale(){
       <div class="form-grid">
         <!-- CLIENTE -->
         <div class="field full">
+          
           <label>
             Buscar cliente por número de identificación
           </label>
-          <input
-            class="input"
-            id="clienteIdentificacion"
-            name="identificacion"
-            placeholder="Escribe el número de identificación..."
-            autocomplete="off"
-          >
+          
+          <div style="
+            display:flex;
+            gap:8px;
+            align-items:flex-start;
+          ">
+          
+            <input
+              class="input"
+              id="clienteIdentificacion"
+              name="identificacion"
+              placeholder="Escribe el número de identificación..."
+              autocomplete="off"
+              style="flex:1;"
+            >
+          
+            <button
+              type="button"
+              class="secondary-btn"
+              onclick="openClientModal()"
+              style="white-space:nowrap;"
+            >
+              + Crear cliente
+            </button>
+          
+          </div>
+          
           <div
             id="clienteResultado"
             class="small"
@@ -48,12 +69,14 @@ function finalizeSale(){
           >
             Consumidor final
           </div>
+          
           <input
             type="hidden"
             id="clienteId"
             name="clienteId"
             value=""
           >
+          
         </div>
         <!-- MÉTODO DE PAGO -->
         <div class="field">

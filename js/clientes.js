@@ -102,26 +102,33 @@ function openClientModal(id = null){
     // Verificar que no exista otra persona
     // con la misma identificación
     if (identificacion) {
-
-      let query = supabaseClient
-        .from("clientes")
-        .select("id")
-        .eq("identificacion", identificacion);
-
-      if (id) {
-        query = query.neq("id", id);
-      }
-
-      const { data: existente, error: errorBusqueda } =
-        await query.maybeSingle();
-
-      if (errorBusqueda) {
+    
+      const { data: existentes, error: errorBusqueda } =
+        await supabaseClient
+          .from("clientes")
+          .select("id")
+          .eq("identificacion", identificacion);
+    
+      /*if (errorBusqueda) {
         console.error("Error verificando identificación:", errorBusqueda);
+        console.error("Código:", errorBusqueda.code);
+        console.error("Mensaje:", errorBusqueda.message);
+        console.error("Detalles:", errorBusqueda.details);
+      
         toast("No se pudo verificar la identificación");
         return;
-      }
-
-      if (existente) {
+      }*/
+     if (errorBusqueda) {
+        console.error("ERROR REAL CLIENTES:", errorBusqueda);
+        alert(JSON.stringify(errorBusqueda, null, 2));
+        return;
+    }
+    
+      const existeOtroCliente = existentes?.some(
+        cliente => String(cliente.id) !== String(id)
+      );
+    
+      if (existeOtroCliente) {
         toast("Ya existe un cliente con esa identificación");
         return;
       }
