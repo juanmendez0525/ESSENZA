@@ -29,7 +29,6 @@ function renderView(view="inicio") {
   const vistasEmpleado = [
     "inicio",
     "ventas",
-    "inventario",
     "apartados"
   ];
 
@@ -86,6 +85,7 @@ function configurarMenuPorRol() {
   }
 
   const vistasAdministrativas = [
+    "inventario",
     "clientes",
     "reportes",
     "configuracion"

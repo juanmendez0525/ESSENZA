@@ -1,4 +1,8 @@
-function openClientModal(id = null){
+
+
+function openClientModal(id = null, opciones = {}){
+
+  const desdeVenta = opciones.desdeVenta === true;
 
   const c = id
     ? getClient(id)
@@ -75,7 +79,7 @@ function openClientModal(id = null){
         <button
           type="button"
           class="secondary-btn"
-          onclick="closeModal()"
+          onclick="${desdeVenta ? "restaurarVentaDesdeCliente()" : "closeModal()"}"
         >
           Cancelar
         </button>
@@ -99,70 +103,105 @@ function openClientModal(id = null){
 
     const identificacion = obj.identificacion.trim();
 
-    // Verificar que no exista otra persona
-    // con la misma identificación
+    // =========================
+    // VERIFICAR IDENTIFICACIÓN
+    // =========================
+
     if (identificacion) {
-    
+
       const { data: existentes, error: errorBusqueda } =
         await supabaseClient
           .from("clientes")
           .select("id")
           .eq("identificacion", identificacion);
-    
-      /*if (errorBusqueda) {
-        console.error("Error verificando identificación:", errorBusqueda);
-        console.error("Código:", errorBusqueda.code);
-        console.error("Mensaje:", errorBusqueda.message);
-        console.error("Detalles:", errorBusqueda.details);
-      
-        toast("No se pudo verificar la identificación");
+
+      if (errorBusqueda) {
+
+        console.error(
+          "ERROR REAL CLIENTES:",
+          errorBusqueda
+        );
+
+        alert(
+          JSON.stringify(
+            errorBusqueda,
+            null,
+            2
+          )
+        );
+
         return;
-      }*/
-     if (errorBusqueda) {
-        console.error("ERROR REAL CLIENTES:", errorBusqueda);
-        alert(JSON.stringify(errorBusqueda, null, 2));
-        return;
-    }
-    
-      const existeOtroCliente = existentes?.some(
-        cliente => String(cliente.id) !== String(id)
-      );
-    
+      }
+
+      const existeOtroCliente =
+        existentes?.some(
+          cliente =>
+            String(cliente.id) !== String(id)
+        );
+
       if (existeOtroCliente) {
-        toast("Ya existe un cliente con esa identificación");
+
+        toast(
+          "Ya existe un cliente con esa identificación"
+        );
+
         return;
       }
     }
 
     const datosCliente = {
-      nombre: obj.nombre.trim(),
-      identificacion: identificacion || null,
-      telefono: obj.telefono.trim() || null,
-      direccion: obj.direccion.trim() || null,
-      email: obj.email.trim() || null
+
+      nombre:
+        obj.nombre.trim(),
+
+      identificacion:
+        identificacion || null,
+
+      telefono:
+        obj.telefono.trim() || null,
+
+      direccion:
+        obj.direccion.trim() || null,
+
+      email:
+        obj.email.trim() || null
     };
+
 
     // =========================
     // EDITAR
     // =========================
+
     if (id) {
 
-      const { data, error } = await supabaseClient
-        .from("clientes")
-        .update(datosCliente)
-        .eq("id", id)
-        .select()
-        .single();
+      const { data, error } =
+        await supabaseClient
+          .from("clientes")
+          .update(datosCliente)
+          .eq("id", id)
+          .select()
+          .single();
 
       if (error) {
-        console.error("Error actualizando cliente:", error);
-        toast("No se pudo actualizar el cliente");
+
+        console.error(
+          "Error actualizando cliente:",
+          error
+        );
+
+        toast(
+          "No se pudo actualizar el cliente"
+        );
+
         return;
       }
 
-      const index = DB.clientes.findIndex(
-        c => String(c.id) === String(id)
-      );
+      const index =
+        DB.clientes.findIndex(
+          c =>
+            String(c.id) ===
+            String(id)
+        );
 
       if (index !== -1) {
         DB.clientes[index] = data;
@@ -170,31 +209,68 @@ function openClientModal(id = null){
 
       toast("Cliente actualizado");
 
+
+      // Si se editó desde una venta,
+      // no tiene sentido volver a Clientes.
+      if (desdeVenta) {
+
+        saveData();
+
+        restaurarVentaDesdeCliente(
+          data.identificacion || ""
+        );
+      
+        return;
+      }
+
     }
+
 
     // =========================
     // CREAR
     // =========================
+
     else {
 
-      const { data, error } = await supabaseClient
-        .from("clientes")
-        .insert(datosCliente)
-        .select()
-        .single();
-
+      const { data, error } =
+        await supabaseClient
+          .from("clientes")
+          .insert(datosCliente)
+          .select()
+          .single();
+        
       if (error) {
-        console.error("Error creando cliente:", error);
-        toast("No se pudo guardar el cliente");
+      
+        console.error(
+          "Error creando cliente:",
+          error
+        );
+      
+        toast(
+          "No se pudo guardar el cliente"
+        );
+      
         return;
       }
-
+    
       DB.clientes.push(data);
-
+    
       toast("Cliente guardado");
+    
+      if (desdeVenta) {
+      
+        saveData();
+      
+        restaurarVentaDesdeCliente(
+          data.identificacion || ""
+        );
+      
+        return;
+      }
     }
 
-    // Mantener la copia local actualizada
+
+    // Mantener copia local actualizada
     saveData();
 
     closeModal();

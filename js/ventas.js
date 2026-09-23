@@ -1,4 +1,99 @@
 let cart=[];
+let ventaEnProcesoEstado = null;
+
+function crearClienteDesdeVenta(){
+
+  ventaEnProcesoEstado = {
+    identificacion:
+      document.getElementById("clienteIdentificacion")?.value || "",
+
+    metodo:
+      document.querySelector(
+        '#saleForm select[name="metodo"]'
+      )?.value || "Efectivo",
+
+    descuento:
+      document.querySelector(
+        '#saleForm input[name="descuento"]'
+      )?.value || "0",
+
+    descripcionDescuento:
+      document.querySelector(
+        '#saleForm input[name="descripcionDescuento"]'
+      )?.value || ""
+  };
+
+  openClientModal(null, {
+    desdeVenta: true
+  });
+}
+function restaurarVentaDesdeCliente(identificacionNueva = ""){
+
+  const estado = ventaEnProcesoEstado;
+
+  ventaEnProcesoEstado = null;
+
+  closeModal();
+
+  // Volver a abrir la ventana de Finalizar venta
+  finalizeSale();
+
+  if (!estado) return;
+
+  const inputCliente =
+    document.getElementById("clienteIdentificacion");
+
+  const metodo =
+    document.querySelector(
+      '#saleForm select[name="metodo"]'
+    );
+
+  const descuento =
+    document.querySelector(
+      '#saleForm input[name="descuento"]'
+    );
+
+  const descripcionDescuento =
+    document.querySelector(
+      '#saleForm input[name="descripcionDescuento"]'
+    );
+
+  // Restaurar método de pago
+  if (metodo) {
+    metodo.value = estado.metodo;
+  }
+
+  // Restaurar descuento
+  if (descuento) {
+    descuento.value = estado.descuento;
+
+    descuento.dispatchEvent(
+      new Event("input", {
+        bubbles: true
+      })
+    );
+  }
+
+  // Restaurar descripción del descuento
+  if (descripcionDescuento) {
+    descripcionDescuento.value =
+      estado.descripcionDescuento;
+  }
+
+  // Seleccionar automáticamente
+  // el cliente recién creado
+  if (inputCliente) {
+
+    inputCliente.value =
+      identificacionNueva || "";
+
+    inputCliente.dispatchEvent(
+      new Event("input", {
+        bubbles: true
+      })
+    );
+  }
+}
 function addToCart(id){
   const p=getProduct(id);
   if(!p||p.stock<=0){toast("Producto sin stock");return}
@@ -31,17 +126,19 @@ function finalizeSale(){
       <div class="form-grid">
         <!-- CLIENTE -->
         <div class="field full">
-          
+
           <label>
             Buscar cliente por número de identificación
           </label>
-          
-          <div style="
-            display:flex;
-            gap:8px;
-            align-items:flex-start;
-          ">
-          
+
+          <div
+            style="
+              display:flex;
+              gap:8px;
+              align-items:flex-start;
+            "
+          >
+
             <input
               class="input"
               id="clienteIdentificacion"
@@ -50,18 +147,18 @@ function finalizeSale(){
               autocomplete="off"
               style="flex:1;"
             >
-          
+
             <button
               type="button"
               class="secondary-btn"
-              onclick="openClientModal()"
+              onclick="crearClienteDesdeVenta()"
               style="white-space:nowrap;"
             >
               + Crear cliente
             </button>
-          
+
           </div>
-          
+
           <div
             id="clienteResultado"
             class="small"
@@ -69,14 +166,14 @@ function finalizeSale(){
           >
             Consumidor final
           </div>
-          
+
           <input
             type="hidden"
             id="clienteId"
             name="clienteId"
             value=""
           >
-          
+
         </div>
         <!-- MÉTODO DE PAGO -->
         <div class="field">

@@ -104,23 +104,7 @@ function renderInventario(){
   // SOLO ADMINISTRADOR
   // ==========================================
 
-  const acciones = esAdmin
-    ? `
-      <button
-        class="secondary-btn"
-        onclick="adjustStock('${p.id}')"
-      >
-        ± Stock
-      </button>
 
-      <button
-        class="secondary-btn"
-        onclick="openProductModal('${p.id}')"
-      >
-        Editar
-      </button>
-    `
-    : "";
 
 
   return `
