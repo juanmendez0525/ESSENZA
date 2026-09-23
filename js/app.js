@@ -720,210 +720,107 @@ if (btnCerrarSesion) {
   btnCerrarSesion.onclick = cerrarSesion;
 }
 
-function openEmpleadoModal(){
+function openEmpleadoModal() {
+  const modal = document.getElementById("modal");
 
-  openModal(`
-    <div class="modal-head">
-      <div>
-        <h2>Crear empleado</h2>
-        <p class="small">
-          Registra los datos personales y de acceso del empleado.
-        </p>
+  modal.innerHTML = `
+    <div class="modal-backdrop" onclick="closeModal()"></div>
+
+    <div class="modal-card">
+      <div class="modal-head">
+        <div>
+          <h2>Crear empleado</h2>
+          <p class="small">
+            Registra los datos personales del empleado.
+          </p>
+        </div>
+
+        <button
+          class="icon-btn"
+          onclick="closeModal()"
+          type="button"
+        >
+          ×
+        </button>
       </div>
-
-      <button
-        class="icon-btn"
-        onclick="closeModal()"
-      >
-        ✕
-      </button>
-    </div>
-
-    <form id="empleadoForm" class="mt">
 
       <div class="form-grid">
 
         <div class="field">
           <label>Nombre completo</label>
           <input
-            class="input"
-            name="nombre"
-            required
-            autocomplete="name"
-            placeholder="Ej. María Pérez"
+            id="empleadoNombre"
+            type="text"
+            placeholder="Nombre completo"
+            autocomplete="off"
           >
         </div>
 
         <div class="field">
           <label>Identificación</label>
           <input
-            class="input"
-            name="identificacion"
-            required
+            id="empleadoIdentificacion"
+            type="text"
             placeholder="Número de identificación"
+            autocomplete="off"
           >
         </div>
 
         <div class="field">
           <label>Teléfono</label>
           <input
-            class="input"
-            name="telefono"
-            required
-            placeholder="Ej. 300 123 4567"
+            id="empleadoTelefono"
+            type="text"
+            placeholder="Número de teléfono"
+            autocomplete="off"
           >
         </div>
 
         <div class="field">
           <label>Correo electrónico</label>
           <input
-            class="input"
+            id="empleadoCorreo"
             type="email"
-            name="email"
-            required
-            autocomplete="email"
-            placeholder="empleado@correo.com"
-          >
-        </div>
-
-        <div class="field">
-          <label>Contraseña</label>
-          <input
-            class="input"
-            type="password"
-            name="password"
-            required
-            autocomplete="new-password"
-            placeholder="Contraseña"
-          >
-        </div>
-
-        <div class="field">
-          <label>Confirmar contraseña</label>
-          <input
-            class="input"
-            type="password"
-            name="passwordConfirm"
-            required
-            autocomplete="new-password"
-            placeholder="Repite la contraseña"
+            placeholder="correo@ejemplo.com"
+            autocomplete="off"
           >
         </div>
 
       </div>
 
-      <div class="row end mt">
+      <div class="mt">
+        <label class="check-row">
+          <input
+            id="empleadoActivo"
+            type="checkbox"
+            checked
+          >
+          <span>Empleado activo</span>
+        </label>
+      </div>
 
+      <div class="modal-actions">
         <button
-          type="button"
           class="secondary-btn"
           onclick="closeModal()"
+          type="button"
         >
           Cancelar
         </button>
 
         <button
-          type="submit"
           class="primary-btn"
+          onclick="guardarEmpleado()"
+          type="button"
         >
-          Crear empleado
+          Guardar empleado
         </button>
-
       </div>
-
-    </form>
-  `);
-
-  document.getElementById("empleadoForm").onsubmit = async e => {
-
-    e.preventDefault();
-
-    const fd = new FormData(e.target);
-
-    const nombre = String(fd.get("nombre") || "").trim();
-    const identificacion = String(fd.get("identificacion") || "").trim();
-    const telefono = String(fd.get("telefono") || "").trim();
-    const email = String(fd.get("email") || "").trim();
-    const password = String(fd.get("password") || "");
-    const passwordConfirm = String(
-      fd.get("passwordConfirm") || ""
-    );
-
-    if (password !== passwordConfirm) {
-      toast("Las contraseñas no coinciden.");
-      return;
-    }
-
-    if (password.length < 6) {
-      toast("La contraseña debe tener al menos 6 caracteres.");
-      return;
-    }
-
-    /*
-      Por ahora NO creamos la cuenta.
-
-      Primero vamos a comprobar que el formulario
-      funciona correctamente.
-    */
-
-    const { data, error } = await supabaseClient
-      .from("empleados")
-      .insert({
-        nombre,
-        identificacion,
-        telefono,
-        correo: email,
-        rol: "empleado",
-        activo: true
-      })
-      .select()
-      .single();
-    
-    if (error) {
-      console.error("Error creando empleado:", error);
-    
-      toast(
-        error.message ||
-        "No se pudo guardar el empleado."
-      );
-    
-      return;
-    }
-    
-    console.log("Empleado creado:", data);
-    
-    toast("Empleado guardado correctamente.");
-    
-    closeModal();
-
-    if (error) {
-      console.error("Error creando empleado:", error);
-    
-      toast(
-        error.message ||
-        "No se pudo crear el empleado."
-      );
-    
-      return;
-    }
-
-    if (!data?.ok) {
-      toast(
-        data?.error ||
-        "No se pudo crear el empleado."
-      );
-    
-      return;
-    }
-
-    toast("Empleado creado correctamente.");
-
-    closeModal();
-
-  };
-
+    </div>
+  `;
+  
+  modal.classList.add("open");
 }
-
 function configurarSidebarRetractil() {
   const sidebar = document.querySelector(".sidebar");
   const toggle = document.getElementById("sidebarToggle");
