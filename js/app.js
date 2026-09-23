@@ -726,7 +726,7 @@ function openEmpleadoModal() {
     "Crear empleado",
     `
       <p class="small">
-        Registra los datos personales del empleado.
+        Registra los datos del empleado y crea su cuenta de acceso.
       </p>
 
       <div class="form-grid mt">
@@ -779,6 +779,30 @@ function openEmpleadoModal() {
           >
         </div>
 
+        <div class="field">
+          <label>Contraseña</label>
+
+          <input
+            class="input"
+            id="empleadoPassword"
+            type="password"
+            placeholder="Mínimo 6 caracteres"
+            autocomplete="new-password"
+          >
+        </div>
+
+        <div class="field">
+          <label>Confirmar contraseña</label>
+
+          <input
+            class="input"
+            id="empleadoPasswordConfirm"
+            type="password"
+            placeholder="Repite la contraseña"
+            autocomplete="new-password"
+          >
+        </div>
+
       </div>
 
       <div class="mt">
@@ -814,7 +838,7 @@ function openEmpleadoModal() {
           onclick="guardarEmpleado()"
           type="button"
         >
-          Guardar empleado
+          Crear empleado
         </button>
 
       </div>
@@ -822,6 +846,7 @@ function openEmpleadoModal() {
   );
 
 }
+
 async function guardarEmpleado() {
 
   const nombre = document
