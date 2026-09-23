@@ -821,6 +821,74 @@ function openEmpleadoModal() {
   
   modal.classList.add("open");
 }
+async function guardarEmpleado() {
+  const nombre = document
+    .getElementById("empleadoNombre")
+    .value
+    .trim();
+
+  const identificacion = document
+    .getElementById("empleadoIdentificacion")
+    .value
+    .trim();
+
+  const telefono = document
+    .getElementById("empleadoTelefono")
+    .value
+    .trim();
+
+  const correo = document
+    .getElementById("empleadoCorreo")
+    .value
+    .trim()
+    .toLowerCase();
+
+  const activo = document
+    .getElementById("empleadoActivo")
+    .checked;
+
+  if (!nombre) {
+    toast("Ingresa el nombre completo.");
+    return;
+  }
+
+  if (!identificacion) {
+    toast("Ingresa la identificación.");
+    return;
+  }
+
+  if (!correo) {
+    toast("Ingresa el correo electrónico.");
+    return;
+  }
+
+  const { data, error } = await supabaseClient
+    .from("perfiles")
+    .insert({
+      nombre,
+      identificacion,
+      telefono,
+      correo,
+      rol: "empleado",
+      activo
+    })
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Error creando empleado:", error);
+    toast(
+      error.message ||
+      "No se pudo guardar el empleado."
+    );
+    return;
+  }
+
+  console.log("Empleado creado:", data);
+
+  toast("Empleado guardado correctamente.");
+  closeModal();
+}
 function configurarSidebarRetractil() {
   const sidebar = document.querySelector(".sidebar");
   const toggle = document.getElementById("sidebarToggle");
