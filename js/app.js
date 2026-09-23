@@ -848,40 +848,13 @@ function openEmpleadoModal() {
 }
 
 async function guardarEmpleado() {
-
-  const nombre = document
-    .getElementById("empleadoNombre")
-    .value
-    .trim();
-
-  const identificacion = document
-    .getElementById("empleadoIdentificacion")
-    .value
-    .trim();
-
-  const telefono = document
-    .getElementById("empleadoTelefono")
-    .value
-    .trim();
-
-  const correo = document
-    .getElementById("empleadoCorreo")
-    .value
-    .trim()
-    .toLowerCase();
-
-  const password = document
-    .getElementById("empleadoPassword")
-    .value;
-
-  const passwordConfirm = document
-    .getElementById("empleadoPasswordConfirm")
-    .value;
-
-
-  // ==========================================
-  // VALIDACIONES
-  // ==========================================
+  const nombre = document.getElementById("empleadoNombre").value.trim();
+  const identificacion = document.getElementById("empleadoIdentificacion").value.trim();
+  const telefono = document.getElementById("empleadoTelefono").value.trim();
+  const correo = document.getElementById("empleadoCorreo").value.trim().toLowerCase();
+  const password = document.getElementById("empleadoPassword").value;
+  const passwordConfirm = document.getElementById("empleadoPasswordConfirm").value;
+  const activo = document.getElementById("empleadoActivo")?.checked ?? true;
 
   if (!nombre) {
     toast("Ingresa el nombre completo.");
@@ -913,17 +886,16 @@ async function guardarEmpleado() {
     return;
   }
 
+  try {
+    console.log("Creando empleado:", {
+      nombre,
+      identificacion,
+      telefono,
+      correo,
+      activo
+    });
 
-  const activo =
-    document.getElementById("empleadoActivo")?.checked ?? true;
-
-
-  // ==========================================
-  // CREAR EMPLEADO
-  // ==========================================
-
-  const { data, error } =
-    await supabaseClient.functions.invoke(
+    const { data, error } = await supabaseClient.functions.invoke(
       "crear-empleado",
       {
         body: {
@@ -937,51 +909,78 @@ async function guardarEmpleado() {
       }
     );
 
+    if (error) {
+      console.error("ERROR COMPLETO DE EDGE FUNCTION:", error);
 
-  if (error) {
+      // Intentar leer el mensaje real enviado por la Edge Function
+      if (error.context) {
+        try {
+          const detalle = await error.context.json();
 
+          console.error(
+            "RESPUESTA REAL DE LA EDGE FUNCTION:",
+            detalle
+          );
+
+          toast(
+            detalle?.error ||
+            detalle?.message ||
+            "La Edge Function rechazó la creación."
+          );
+
+          return;
+
+        } catch (e) {
+          console.error(
+            "No se pudo leer la respuesta de la Edge Function:",
+            e
+          );
+        }
+      }
+
+      toast(
+        error.message ||
+        "No se pudo crear el empleado."
+      );
+
+      return;
+    }
+
+    console.log(
+      "RESPUESTA DE crear-empleado:",
+      data
+    );
+
+    if (!data?.ok) {
+      console.error(
+        "La Edge Function respondió con error:",
+        data
+      );
+
+      toast(
+        data?.error ||
+        "No se pudo crear el empleado."
+      );
+
+      return;
+    }
+
+    toast("Empleado creado correctamente.");
+    closeModal();
+
+  } catch (error) {
     console.error(
-      "Error invocando crear-empleado:",
+      "ERROR INESPERADO CREANDO EMPLEADO:",
       error
     );
 
     toast(
-      "No se pudo crear el empleado."
+      error?.message ||
+      "Ocurrió un error al crear el empleado."
     );
-
-    return;
   }
-
-
-  if (!data?.ok) {
-
-    console.error(
-      "Error de crear-empleado:",
-      data
-    );
-
-    toast(
-      data?.error ||
-      "No se pudo crear el empleado."
-    );
-
-    return;
-  }
-
-
-  console.log(
-    "Empleado creado correctamente:",
-    data
-  );
-
-
-  toast(
-    "Empleado creado correctamente."
-  );
-
-  closeModal();
-
 }
+
 function configurarSidebarRetractil() {
   const sidebar = document.querySelector(".sidebar");
   const toggle = document.getElementById("sidebarToggle");
