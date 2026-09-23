@@ -823,6 +823,7 @@ function openEmpleadoModal() {
 
 }
 async function guardarEmpleado() {
+
   const nombre = document
     .getElementById("empleadoNombre")
     .value
@@ -844,9 +845,18 @@ async function guardarEmpleado() {
     .trim()
     .toLowerCase();
 
-  const activo = document
-    .getElementById("empleadoActivo")
-    .checked;
+  const password = document
+    .getElementById("empleadoPassword")
+    .value;
+
+  const passwordConfirm = document
+    .getElementById("empleadoPasswordConfirm")
+    .value;
+
+
+  // ==========================================
+  // VALIDACIONES
+  // ==========================================
 
   if (!nombre) {
     toast("Ingresa el nombre completo.");
@@ -863,32 +873,89 @@ async function guardarEmpleado() {
     return;
   }
 
-  const { data, error } = await supabaseClient
-    .from("perfiles")
-    .insert({
-      nombre,
-      identificacion,
-      telefono,
-      correo,
-      rol: "empleado",
-      activo
-    })
-    .select()
-    .single();
-
-  if (error) {
-    console.error("Error creando empleado:", error);
-    toast(
-      error.message ||
-      "No se pudo guardar el empleado."
-    );
+  if (!password) {
+    toast("Ingresa una contraseña.");
     return;
   }
 
-  console.log("Empleado creado:", data);
+  if (password.length < 6) {
+    toast("La contraseña debe tener mínimo 6 caracteres.");
+    return;
+  }
 
-  toast("Empleado guardado correctamente.");
+  if (password !== passwordConfirm) {
+    toast("Las contraseñas no coinciden.");
+    return;
+  }
+
+
+  const activo =
+    document.getElementById("empleadoActivo")?.checked ?? true;
+
+
+  // ==========================================
+  // CREAR EMPLEADO
+  // ==========================================
+
+  const { data, error } =
+    await supabaseClient.functions.invoke(
+      "crear-empleado",
+      {
+        body: {
+          nombre,
+          identificacion,
+          telefono,
+          correo,
+          password,
+          activo
+        }
+      }
+    );
+
+
+  if (error) {
+
+    console.error(
+      "Error invocando crear-empleado:",
+      error
+    );
+
+    toast(
+      "No se pudo crear el empleado."
+    );
+
+    return;
+  }
+
+
+  if (!data?.ok) {
+
+    console.error(
+      "Error de crear-empleado:",
+      data
+    );
+
+    toast(
+      data?.error ||
+      "No se pudo crear el empleado."
+    );
+
+    return;
+  }
+
+
+  console.log(
+    "Empleado creado correctamente:",
+    data
+  );
+
+
+  toast(
+    "Empleado creado correctamente."
+  );
+
   closeModal();
+
 }
 function configurarSidebarRetractil() {
   const sidebar = document.querySelector(".sidebar");
