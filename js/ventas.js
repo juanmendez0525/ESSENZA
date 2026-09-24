@@ -114,16 +114,20 @@ function removeFromCart(id){
   renderView("ventas");
 }
 function cartTotal(){return cart.reduce((s,i)=>s+i.precio*i.cantidad,0)}
+
 function finalizeSale(){
   if(!cart.length){
     toast("Agrega productos a la venta");
     return;
   }
+
   openModal(
     "Finalizar venta",
     `
     <form id="saleForm">
+
       <div class="form-grid">
+
         <!-- CLIENTE -->
         <div class="field full">
 
@@ -175,98 +179,109 @@ function finalizeSale(){
           >
 
         </div>
+
         <!-- MÉTODO DE PAGO -->
         <div class="field">
+
           <label>
             Método de pago
           </label>
+
           <select
-            class="select"
+            class="input"
             name="metodo"
           >
-            <option>Efectivo</option>
-            <option>Nequi</option>
-            <option>Daviplata</option>
-            <option>Transferencia</option>
-            <option>Tarjeta</option>
+            <option value="Efectivo">
+              Efectivo
+            </option>
+
+            <option value="Nequi">
+              Nequi
+            </option>
+
+            <option value="Daviplata">
+              Daviplata
+            </option>
+
+            <option value="Transferencia">
+              Transferencia
+            </option>
+
+            <option value="Tarjeta">
+              Tarjeta
+            </option>
           </select>
+
         </div>
+
         <!-- DESCUENTO -->
         <div class="field">
+
           <label>
             Descuento
           </label>
+
           <input
             class="input"
             type="number"
             name="descuento"
-            value="0"
             min="0"
             step="0.01"
+            value="0"
           >
+
         </div>
+
         <!-- DESCRIPCIÓN DEL DESCUENTO -->
         <div class="field full">
-          <label id="labelDescripcionDescuento">
+
+          <label id="labelDescripcion">
             Descripción del descuento
           </label>
+
           <input
             class="input"
             type="text"
             name="descripcionDescuento"
-            placeholder="Ej: Descuento por promoción, cliente frecuente..."
+            id="descripcionDescuento"
+            placeholder="Ej: Promoción, cliente frecuente..."
           >
+
         </div>
+
       </div>
-      <!-- RESUMEN DE LA VENTA -->
-      <div
-        class="card mt"
-        style="box-shadow:none;background:var(--soft)"
-      >
-        <div class="row space">
-          <span>
-            Subtotal
-          </span>
-          <b id="saleSubtotal">
-            ${money(cartTotal())}
-          </b>
+
+      <div class="card mt">
+
+        <div class="list">
+
+          <div class="list-item">
+            <span>Subtotal</span>
+            <b id="saleSubtotal">
+              ${money(cartTotal())}
+            </b>
+          </div>
+
+          <div class="list-item">
+            <span>Descuento</span>
+            <b id="saleDiscount">
+              ${money(0)}
+            </b>
+          </div>
+
+          <div class="list-item">
+            <span>Total</span>
+            <b id="saleTotal">
+              ${money(cartTotal())}
+            </b>
+          </div>
+
         </div>
-        <div
-          class="row space"
-          style="margin-top:10px;"
-        >
-          <span>
-            Descuento
-          </span>
-          <b id="saleDiscount">
-            ${money(0)}
-          </b>
-        </div>
-        <div
-          class="row space"
-          style="
-            margin-top:14px;
-            padding-top:12px;
-            border-top:1px solid rgba(0,0,0,.12);
-          "
-        >
-          <span
-            class="kpi"
-            style="font-size:18px"
-          >
-            TOTAL
-          </span>
-          <b
-            id="saleTotal"
-            class="kpi"
-            style="font-size:22px"
-          >
-            ${money(cartTotal())}
-          </b>
-        </div>
+
       </div>
-      <!-- BOTONES -->
-      <div class="modal-actions">
+
+      <div class="modal-actions mt">
+
         <button
           type="button"
           class="secondary-btn"
@@ -274,154 +289,127 @@ function finalizeSale(){
         >
           Cancelar
         </button>
+
         <button
+          type="submit"
           class="primary-btn"
         >
           Confirmar venta
         </button>
+
       </div>
+
     </form>
     `
   );
-  // =========================
-  // ELEMENTOS DEL FORMULARIO
-  // =========================
-  const inputCliente =
-    document.getElementById(
-      "clienteIdentificacion"
-    );
-  const resultadoCliente =
-    document.getElementById(
-      "clienteResultado"
-    );
-  const clienteId =
-    document.getElementById(
-      "clienteId"
-    );
+
+  const subtotalVenta = cartTotal();
+
   const inputDescuento =
     document.querySelector(
       '#saleForm input[name="descuento"]'
     );
+
   const campoDescripcion =
-    document.querySelector(
-      '#saleForm input[name="descripcionDescuento"]'
+    document.getElementById(
+      "descripcionDescuento"
     );
+
   const labelDescripcion =
     document.getElementById(
-      "labelDescripcionDescuento"
+      "labelDescripcion"
     );
+
+  const saleSubtotal =
+    document.getElementById(
+      "saleSubtotal"
+    );
+
   const saleDiscount =
     document.getElementById(
       "saleDiscount"
     );
+
   const saleTotal =
     document.getElementById(
       "saleTotal"
     );
-  const subtotalVenta =
-    cartTotal();
+
   // =========================
   // BUSCAR CLIENTE
   // =========================
+
+  const inputCliente =
+    document.getElementById(
+      "clienteIdentificacion"
+    );
+
+  const clienteResultado =
+    document.getElementById(
+      "clienteResultado"
+    );
+
+  const clienteId =
+    document.getElementById(
+      "clienteId"
+    );
+
   inputCliente.addEventListener(
     "input",
-    function(){
+    () => {
+
       const identificacion =
-        this.value.trim();
+        inputCliente.value.trim();
+
       clienteId.value = "";
+
       if(!identificacion){
-        resultadoCliente.innerHTML =
-          `
-          <div class="small">
-            Consumidor final
-          </div>
-          `;
+
+        clienteResultado.textContent =
+          "Consumidor final";
+
         return;
       }
+
       const cliente =
         DB.clientes.find(
           c =>
             String(
               c.identificacion || ""
-            ).trim() === identificacion
+            ).trim() ===
+            identificacion
         );
+
       if(cliente){
+
         clienteId.value =
           cliente.id;
-        resultadoCliente.innerHTML =
-          `
-          <div
-            class="card"
-            style="
-              margin-top:10px;
-              padding:12px;
-              box-shadow:none;
-              background:var(--soft);
-            "
-          >
-            <div
-              class="badge success"
-              style="
-                display:inline-block;
-                margin-bottom:10px;
-              "
-            >
-              ✓ Cliente encontrado
-            </div>
-            <div class="small">
-              <b>Nombre:</b>
-              ${cliente.nombre}
-            </div>
-            <div class="small">
-              <b>Identificación:</b>
-              ${cliente.identificacion || "—"}
-            </div>
-            <div class="small">
-              <b>Teléfono:</b>
-              ${cliente.telefono || "—"}
-            </div>
-            <div class="small">
-              <b>Correo:</b>
-              ${cliente.email || "—"}
-            </div>
-          </div>
-          `;
-      } else {
-        resultadoCliente.innerHTML =
-          `
-          <div
-            style="
-              margin-top:8px;
-              color:#b45309;
-            "
-          >
-            No se encontró un cliente con esa identificación.
-          </div>
-          <button
-            type="button"
-            class="secondary-btn"
-            style="margin-top:8px;"
-            onclick="
-              document.getElementById('clienteIdentificacion').value='';
-              document.getElementById('clienteId').value='';
-              document.getElementById('clienteResultado').innerHTML='Consumidor final';
-              document.getElementById('clienteIdentificacion').focus();
-            "
-          >
-            Usar consumidor final
-          </button>
-          `;
+
+        clienteResultado.innerHTML =
+          `<b>${cliente.nombre}</b>` +
+          `${cliente.telefono ? " · " + cliente.telefono : ""}`;
+
+      }else{
+
+        clienteResultado.textContent =
+          "Cliente no encontrado. Puedes crearlo.";
+
       }
+
     }
   );
+
   // =========================
   // ACTUALIZAR TOTALES
   // =========================
+
   function actualizarTotales(){
+
     const descuento =
       Number(
         inputDescuento.value || 0
       );
+
     const descuentoValido =
       Math.max(
         0,
@@ -430,73 +418,102 @@ function finalizeSale(){
           subtotalVenta
         )
       );
+
     const total =
       subtotalVenta -
       descuentoValido;
+
+    saleSubtotal.textContent =
+      money(subtotalVenta);
+
     saleDiscount.textContent =
       money(descuentoValido);
+
     saleTotal.textContent =
       money(total);
   }
+
   // =========================
   // VALIDAR DESCRIPCIÓN
   // =========================
+
   function actualizarObligatoriedadDescuento(){
+
     const descuento =
       Number(
         inputDescuento.value || 0
       );
+
     if(descuento > 0){
+
       campoDescripcion.required =
         true;
+
       labelDescripcion.innerHTML =
         'Descripción del descuento <span style="color:#b91c1c">*</span>';
-    } else {
+
+    }else{
+
       campoDescripcion.required =
         false;
+
       labelDescripcion.textContent =
         "Descripción del descuento";
     }
   }
+
   inputDescuento.addEventListener(
     "input",
     actualizarTotales
   );
+
   inputDescuento.addEventListener(
     "input",
     actualizarObligatoriedadDescuento
   );
+
   actualizarTotales();
   actualizarObligatoriedadDescuento();
+
   // =========================
   // GUARDAR VENTA
   // =========================
+
   document.getElementById(
     "saleForm"
-  ).onsubmit = async  e => {
+  ).onsubmit = async e => {
+
     e.preventDefault();
+
     const fd =
       new FormData(e.target);
+
     const desc =
       Number(
         fd.get("descuento") || 0
       );
+
     const descripcionDescuento =
       String(
         fd.get(
           "descripcionDescuento"
         ) || ""
       ).trim();
+
     if(
       desc > 0 &&
       !descripcionDescuento
     ){
+
       toast(
         "Debes indicar el motivo o descripción del descuento."
       );
+
       campoDescripcion.focus();
+
       return;
     }
+
     const descuentoValido =
       Math.max(
         0,
@@ -505,12 +522,15 @@ function finalizeSale(){
           subtotalVenta
         )
       );
+
     const total =
       subtotalVenta -
       descuentoValido;
+
     // =========================
-    // CONFIRMACIÓN FINAL
+    // CONFIRMACIÓN
     // =========================
+
     const confirmar =
       confirm(
         "¿Deseas confirmar esta venta?\n\n" +
@@ -521,50 +541,44 @@ function finalizeSale(){
         "la venta y se descontarán los productos " +
         "del inventario."
       );
+
     if(!confirmar){
       return;
     }
-    // =========================
-    // DESCONTAR INVENTARIO
-    // =========================
-    for (const i of cart) {
 
-      const producto = getProduct(i.productoId);
+    // =========================
+    // USUARIO ACTUAL
+    // =========================
 
-      if (!producto) {
-        toast("No se encontró uno de los productos.");
-        return;
-      }
-    
-      const nuevoStock = producto.stock - i.cantidad;
-    
-      if (nuevoStock < 0) {
-        toast(`No hay suficiente stock de ${producto.nombre}.`);
-        return;
-      }
-    
-      const { error } = await supabaseClient
-        .from("productos")
-        .update({
-          stock: nuevoStock,
-          updated_at: new Date().toISOString()
-        })
-        .eq("id", producto.id);
-      
-      if (error) {
-        console.error("Error actualizando stock:", error);
-        toast(`Error actualizando stock: ${error.message}`);
-        return;
-      }
+    const {
+      data: {
+        user
+      },
+      error: errorUsuario
+    } =
+      await supabaseClient.auth.getUser();
+
+    if(
+      errorUsuario ||
+      !user
+    ){
+
+      console.error(
+        "No se pudo obtener el usuario:",
+        errorUsuario
+      );
+
+      toast(
+        "No se pudo identificar al usuario actual."
+      );
+
+      return;
     }
 
-    await cargarProductosDesdeSupabase();
-    renderView("ventas");
-
-
     // =========================
-    // OBTENER CLIENTE
+    // OBTENER CLIENTE LOCAL
     // =========================
+
     const clienteEncontrado =
       DB.clientes.find(
         c =>
@@ -573,73 +587,238 @@ function finalizeSale(){
             fd.get("clienteId")
           )
       );
+
     // =========================
-    // CREAR VENTA
+    // ID DE LA VENTA EN SUPABASE
     // =========================
+
+    const ventaId =
+      crypto.randomUUID();
+
+    // =========================
+    // CREAR VENTA EN SUPABASE
+    // =========================
+
+    const {
+      error: errorVenta
+    } =
+      await supabaseClient
+        .from("ventas")
+        .insert({
+          id: ventaId,
+
+          fecha:
+            new Date().toISOString(),
+
+          subtotal:
+            subtotalVenta,
+
+          descuento:
+            descuentoValido,
+
+          total:
+            total,
+
+          metodo_pago:
+            fd.get("metodo"),
+
+          estado:
+            "Completada",
+
+          notas:
+            clienteEncontrado
+              ? `Cliente: ${clienteEncontrado.nombre}`
+              : "Consumidor final",
+
+          usuario_id:
+            user.id,
+
+          descripcion_descuento:
+            descripcionDescuento || null
+        });
+
+    if(errorVenta){
+
+      console.error(
+        "Error guardando venta en Supabase:",
+        errorVenta
+      );
+
+      toast(
+        "No se pudo guardar la venta en Supabase."
+      );
+
+      return;
+    }
+
+    // =========================
+    // CREAR DETALLES
+    // =========================
+
+    const detalles =
+      cart.map(item => {
+
+        const producto =
+          getProduct(
+            item.productoId
+          );
+
+        return {
+
+          venta_id:
+            ventaId,
+
+          producto_id:
+            producto?.id || null,
+
+          producto_nombre:
+            producto?.nombre ||
+            "Producto",
+
+          producto_marca:
+            producto?.marca ||
+            "",
+
+          cantidad:
+            Number(
+              item.cantidad
+            ),
+
+          precio_unitario:
+            Number(
+              item.precio
+            ),
+
+          subtotal:
+            Number(item.precio) *
+            Number(item.cantidad)
+
+        };
+
+      });
+
+    const {
+      error: errorDetalles
+    } =
+      await supabaseClient
+        .from("venta_detalles")
+        .insert(detalles);
+
+    if(errorDetalles){
+
+      console.error(
+        "Error guardando detalles:",
+        errorDetalles
+      );
+
+      // Intentamos eliminar la venta
+      // incompleta para no dejar
+      // registros huérfanos.
+
+      await supabaseClient
+        .from("ventas")
+        .delete()
+        .eq("id", ventaId);
+
+      toast(
+        "No se pudieron guardar los productos de la venta."
+      );
+
+      return;
+    }
+
+    // =========================
+    // DESCONTAR INVENTARIO LOCAL
+    // =========================
+
+    cart.forEach(i => {
+
+      const producto =
+        getProduct(
+          i.productoId
+        );
+
+      if(producto){
+
+        producto.stock -=
+          i.cantidad;
+
+      }
+
+    });
+
+    // =========================
+    // CREAR VENTA LOCAL
+    // =========================
+
     DB.ventas.unshift({
-      id: Date.now(),
-        
+
+      id:
+        Date.now(),
+
       fecha:
         new Date()
           .toISOString()
           .slice(0, 10),
-        
+
       cliente:
         clienteEncontrado
           ? clienteEncontrado.nombre
           : "Consumidor final",
-        
+
       clienteId:
         clienteEncontrado
           ? clienteEncontrado.id
           : null,
-        
+
       identificacionCliente:
         clienteEncontrado
           ? clienteEncontrado.identificacion || ""
           : "",
-        
+
       telefonoCliente:
         clienteEncontrado
           ? clienteEncontrado.telefono || ""
           : "",
-        
+
       direccionCliente:
         clienteEncontrado
           ? clienteEncontrado.direccion || ""
           : "",
-        
+
       items:
         [...cart],
-        
+
       descuento:
         descuentoValido,
-        
+
       descripcionDescuento:
         descripcionDescuento,
-        
+
       metodo:
         fd.get("metodo"),
-        
+
       total:
         total
     });
+
     const sale =
       DB.ventas[0];
+
     saveData();
+
     cart = [];
 
     closeModal();
 
-    await cargarProductosDesdeSupabase();
-
-    renderView("ventas");
-
     showReceipt(sale);
 
-    toast("Venta registrada correctamente");
+    toast(
+      "Venta registrada correctamente"
+    );
   };
 }
+
 function showReceipt(sale) {
 
   const fechaVenta = new Date();
