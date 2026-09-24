@@ -1,5 +1,13 @@
 const viewMeta={
-  inicio:["Inicio","Resumen de tu negocio"],ventas:["Nueva venta","Busca productos y cobra"],inventario:["Inventario","Productos y existencias"],apartados:["Apartados","Pedidos, abonos y entregas"],clientes:["Clientes","Tus clientes y su historial"],reportes:["Reportes","Resumen de ventas y rentabilidad"],configuracion:["Configuración","Datos básicos de tu negocio"],mas:["Más","Opciones adicionales"]
+  inicio:["Inicio","Resumen de tu negocio"],
+  ventas:["Nueva venta","Busca productos y cobra"],
+  inventario:["Inventario","Productos y existencias"],
+  apartados:["Apartados","Pedidos, abonos y entregas"],
+  clientes:["Clientes","Tus clientes y su historial"],
+  historial:["Historial de ventas","Consulta las ventas registradas"],
+  reportes:["Reportes","Resumen de ventas y rentabilidad"],
+  configuracion:["Configuración","Datos básicos de tu negocio"],
+  mas:["Más","Opciones adicionales"]
 };
 function openModal(title,content){
   document.getElementById("modalRoot").innerHTML=`<div class="modal-backdrop" onclick="if(event.target===this)closeModal()"><div class="modal"><div class="modal-head"><h2>${title}</h2><button class="close-btn" onclick="closeModal()">×</button></div>${content}</div></div>`;
@@ -67,6 +75,7 @@ function renderView(view="inicio") {
     apartados: renderApartados,
     clientes: renderClientes,
     reportes: renderReportes,
+    historial: renderHistorial,
     configuracion: renderConfiguracion
   };
 
@@ -99,8 +108,8 @@ function configurarMenuPorRol() {
   }
 
   const vistasAdministrativas = [
-    "inventario",
     "clientes",
+    "historial",
     "reportes",
     "configuracion"
   ];
@@ -248,9 +257,9 @@ function renderInicio() {
 
           <button
             class="secondary-btn"
-            onclick="renderView('reportes')"
+            onclick="renderView('historial')"
           >
-            Ver reportes
+            Ver historial
           </button>
 
         </div>

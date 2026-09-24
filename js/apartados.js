@@ -636,7 +636,7 @@ function deliverApartado(id){
   a.estado="Entregado";saveData();renderView("apartados");toast("Pedido entregado");
 }
 function renderApartados(){
-  return `<div class="hero"><div class="section-head"><div><h2>Pedidos apartados</h2><p>Controla abonos, saldos y entregas.</p></div><button class="primary-btn" onclick="openApartadoModal()">+ Nuevo apartado</button></div></div>
+  return `<div class="hero"><div class="section-head"><div><h2>Pedidos apartados</h2><p>Controla abonos, saldos y entregas.</p></div></div></div>
   <div class="stats-grid grid">
     ${["Pendiente","Pagado","Entregado"].map(s=>`<div class="card stat-card"><div class="stat-label">${s}</div><div class="stat-value">${DB.apartados.filter(a=>a.estado===s).length}</div></div>`).join("")}
     <div class="card stat-card"><div class="stat-label">Saldo pendiente</div><div class="stat-value">${money(DB.apartados.filter(a=>a.estado!=="Entregado").reduce((s,a)=>s+a.total-a.abonado,0))}</div></div>
