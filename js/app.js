@@ -720,208 +720,265 @@ if (btnCerrarSesion) {
   btnCerrarSesion.onclick = cerrarSesion;
 }
 
-function openEmpleadoModal(){
+function openEmpleadoModal() {
 
-  openModal(`
-    <div class="modal-head">
-      <div>
-        <h2>Crear empleado</h2>
-        <p class="small">
-          Registra los datos personales y de acceso del empleado.
-        </p>
-      </div>
+  openModal(
+    "Crear empleado",
+    `
+      <p class="small">
+        Registra los datos del empleado y crea su cuenta de acceso.
+      </p>
 
-      <button
-        class="icon-btn"
-        onclick="closeModal()"
-      >
-        ✕
-      </button>
-    </div>
-
-    <form id="empleadoForm" class="mt">
-
-      <div class="form-grid">
+      <div class="form-grid mt">
 
         <div class="field">
           <label>Nombre completo</label>
+
           <input
             class="input"
-            name="nombre"
-            required
-            autocomplete="name"
-            placeholder="Ej. María Pérez"
+            id="empleadoNombre"
+            type="text"
+            placeholder="Nombre completo"
+            autocomplete="off"
           >
         </div>
 
         <div class="field">
           <label>Identificación</label>
+
           <input
             class="input"
-            name="identificacion"
-            required
+            id="empleadoIdentificacion"
+            type="text"
             placeholder="Número de identificación"
+            autocomplete="off"
           >
         </div>
 
         <div class="field">
           <label>Teléfono</label>
+
           <input
             class="input"
-            name="telefono"
-            required
-            placeholder="Ej. 300 123 4567"
+            id="empleadoTelefono"
+            type="text"
+            placeholder="Número de teléfono"
+            autocomplete="off"
           >
         </div>
 
         <div class="field">
           <label>Correo electrónico</label>
+
           <input
             class="input"
+            id="empleadoCorreo"
             type="email"
-            name="email"
-            required
-            autocomplete="email"
-            placeholder="empleado@correo.com"
+            placeholder="correo@ejemplo.com"
+            autocomplete="off"
           >
         </div>
 
         <div class="field">
           <label>Contraseña</label>
+
           <input
             class="input"
+            id="empleadoPassword"
             type="password"
-            name="password"
-            required
+            placeholder="Mínimo 6 caracteres"
             autocomplete="new-password"
-            placeholder="Contraseña"
           >
         </div>
 
         <div class="field">
           <label>Confirmar contraseña</label>
+
           <input
             class="input"
+            id="empleadoPasswordConfirm"
             type="password"
-            name="passwordConfirm"
-            required
-            autocomplete="new-password"
             placeholder="Repite la contraseña"
+            autocomplete="new-password"
           >
         </div>
 
       </div>
 
-      <div class="row end mt">
+      <div class="mt">
+
+        <label class="check-row">
+
+          <input
+            id="empleadoActivo"
+            type="checkbox"
+            checked
+          >
+
+          <span>
+            Empleado activo
+          </span>
+
+        </label>
+
+      </div>
+
+      <div class="modal-actions mt">
 
         <button
-          type="button"
           class="secondary-btn"
           onclick="closeModal()"
+          type="button"
         >
           Cancelar
         </button>
 
         <button
-          type="submit"
           class="primary-btn"
+          onclick="guardarEmpleado()"
+          type="button"
         >
           Crear empleado
         </button>
 
       </div>
+    `
+  );
 
-    </form>
-  `);
+}
 
-  document.getElementById("empleadoForm").onsubmit = async e => {
+async function guardarEmpleado() {
+  const nombre = document.getElementById("empleadoNombre").value.trim();
+  const identificacion = document.getElementById("empleadoIdentificacion").value.trim();
+  const telefono = document.getElementById("empleadoTelefono").value.trim();
+  const correo = document.getElementById("empleadoCorreo").value.trim().toLowerCase();
+  const password = document.getElementById("empleadoPassword").value;
+  const passwordConfirm = document.getElementById("empleadoPasswordConfirm").value;
+  const activo = document.getElementById("empleadoActivo")?.checked ?? true;
 
-    e.preventDefault();
+  if (!nombre) {
+    toast("Ingresa el nombre completo.");
+    return;
+  }
 
-    const fd = new FormData(e.target);
+  if (!identificacion) {
+    toast("Ingresa la identificación.");
+    return;
+  }
 
-    const nombre = String(fd.get("nombre") || "").trim();
-    const identificacion = String(fd.get("identificacion") || "").trim();
-    const telefono = String(fd.get("telefono") || "").trim();
-    const email = String(fd.get("email") || "").trim();
-    const password = String(fd.get("password") || "");
-    const passwordConfirm = String(
-      fd.get("passwordConfirm") || ""
+  if (!correo) {
+    toast("Ingresa el correo electrónico.");
+    return;
+  }
+
+  if (!password) {
+    toast("Ingresa una contraseña.");
+    return;
+  }
+
+  if (password.length < 6) {
+    toast("La contraseña debe tener mínimo 6 caracteres.");
+    return;
+  }
+
+  if (password !== passwordConfirm) {
+    toast("Las contraseñas no coinciden.");
+    return;
+  }
+
+  try {
+    console.log("Creando empleado:", {
+      nombre,
+      identificacion,
+      telefono,
+      correo,
+      activo
+    });
+
+    const { data, error } = await supabaseClient.functions.invoke(
+      "crear-empleado",
+      {
+        body: {
+          nombre,
+          identificacion,
+          telefono,
+          correo,
+          password,
+          activo
+        }
+      }
     );
 
-    if (password !== passwordConfirm) {
-      toast("Las contraseñas no coinciden.");
-      return;
-    }
-
-    if (password.length < 6) {
-      toast("La contraseña debe tener al menos 6 caracteres.");
-      return;
-    }
-
-    /*
-      Por ahora NO creamos la cuenta.
-
-      Primero vamos a comprobar que el formulario
-      funciona correctamente.
-    */
-
-    const { data, error } = await supabaseClient
-      .from("empleados")
-      .insert({
-        nombre,
-        identificacion,
-        telefono,
-        correo: email,
-        rol: "empleado",
-        activo: true
-      })
-      .select()
-      .single();
-    
     if (error) {
-      console.error("Error creando empleado:", error);
-    
-      toast(
-        error.message ||
-        "No se pudo guardar el empleado."
-      );
-    
-      return;
-    }
-    
-    console.log("Empleado creado:", data);
-    
-    toast("Empleado guardado correctamente.");
-    
-    closeModal();
+      console.error("ERROR COMPLETO DE EDGE FUNCTION:", error);
 
-    if (error) {
-      console.error("Error creando empleado:", error);
-    
+      // Intentar leer el mensaje real enviado por la Edge Function
+      if (error.context) {
+        try {
+          const detalle = await error.context.json();
+
+          console.error(
+            "RESPUESTA REAL DE LA EDGE FUNCTION:",
+            detalle
+          );
+
+          toast(
+            detalle?.error ||
+            detalle?.message ||
+            "La Edge Function rechazó la creación."
+          );
+
+          return;
+
+        } catch (e) {
+          console.error(
+            "No se pudo leer la respuesta de la Edge Function:",
+            e
+          );
+        }
+      }
+
       toast(
         error.message ||
         "No se pudo crear el empleado."
       );
-    
+
       return;
     }
 
+    console.log(
+      "RESPUESTA DE crear-empleado:",
+      data
+    );
+
     if (!data?.ok) {
+      console.error(
+        "La Edge Function respondió con error:",
+        data
+      );
+
       toast(
         data?.error ||
         "No se pudo crear el empleado."
       );
-    
+
       return;
     }
 
     toast("Empleado creado correctamente.");
-
     closeModal();
 
-  };
+  } catch (error) {
+    console.error(
+      "ERROR INESPERADO CREANDO EMPLEADO:",
+      error
+    );
 
+    toast(
+      error?.message ||
+      "Ocurrió un error al crear el empleado."
+    );
+  }
 }
 
 function configurarSidebarRetractil() {

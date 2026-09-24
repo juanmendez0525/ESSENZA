@@ -114,6 +114,7 @@ function removeFromCart(id){
   renderView("ventas");
 }
 function cartTotal(){return cart.reduce((s,i)=>s+i.precio*i.cantidad,0)}
+
 function finalizeSale(){
   if(!cart.length){
     toast("Agrega productos a la venta");
@@ -817,6 +818,7 @@ function finalizeSale(){
     );
   };
 }
+
 function showReceipt(sale) {
 
   const fechaVenta = new Date();
