@@ -623,7 +623,7 @@ function finalizeSale(){
             fd.get("metodo"),
 
           estado:
-            "Completada",
+            "completada",
 
           notas:
             clienteEncontrado
@@ -640,14 +640,18 @@ function finalizeSale(){
     if(errorVenta){
 
       console.error(
-        "Error guardando venta en Supabase:",
+        "ERROR COMPLETO AL GUARDAR VENTA:",
         errorVenta
       );
-
-      toast(
-        "No se pudo guardar la venta en Supabase."
+    
+      alert(
+        "ERROR SUPABASE:\n\n" +
+        "Código: " + (errorVenta.code || "") + "\n" +
+        "Mensaje: " + (errorVenta.message || "") + "\n" +
+        "Detalles: " + (errorVenta.details || "") + "\n" +
+        "Hint: " + (errorVenta.hint || "")
       );
-
+    
       return;
     }
 
@@ -728,24 +732,68 @@ function finalizeSale(){
     }
 
     // =========================
-    // DESCONTAR INVENTARIO LOCAL
+    // DESCONTAR INVENTARIO EN SUPABASE
     // =========================
 
-    cart.forEach(i => {
-
-      const producto =
-        getProduct(
-          i.productoId
+    for (const item of cart) {
+    
+      const producto = getProduct(item.productoId);
+    
+      if (!producto) {
+        console.error(
+          "Producto no encontrado:",
+          item.productoId
         );
-
-      if(producto){
-
-        producto.stock -=
-          i.cantidad;
-
+      
+        toast("No se encontró uno de los productos.");
+        return;
       }
-
-    });
+    
+      const nuevoStock =
+        Number(producto.stock || 0) -
+        Number(item.cantidad || 0);
+    
+      if (nuevoStock < 0) {
+        toast(
+          `No hay suficiente stock para ${producto.nombre}.`
+        );
+        return;
+      }
+    
+      const {
+        error: errorStock
+      } = await supabaseClient
+        .from("productos")
+        .update({
+          stock: nuevoStock
+        })
+        .eq("id", producto.id);
+      
+      if (errorStock) {
+      
+        console.error(
+          "Error actualizando stock:",
+          errorStock
+        );
+      
+        alert(
+          "ERROR AL ACTUALIZAR STOCK:\n\n" +
+          "Código: " +
+          (errorStock.code || "") +
+          "\n\nMensaje: " +
+          (errorStock.message || "") +
+          "\n\nDetalles: " +
+          (errorStock.details || "") +
+          "\n\nHint: " +
+          (errorStock.hint || "")
+        );
+      
+        return;
+      }
+    
+      // Actualizar también la copia local
+      producto.stock = nuevoStock;
+    }
 
     // =========================
     // CREAR VENTA LOCAL
@@ -807,12 +855,18 @@ function finalizeSale(){
 
     saveData();
 
+    // Vaciar carrito
     cart = [];
-
+      
+    // Cerrar modal de finalización
     closeModal();
-
+      
+    // Mostrar nuevamente la vista de ventas
+    renderView("ventas");
+      
+    // Mostrar comprobante
     showReceipt(sale);
-
+      
     toast(
       "Venta registrada correctamente"
     );
