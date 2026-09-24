@@ -639,18 +639,14 @@ function finalizeSale(){
     if(errorVenta){
 
       console.error(
-        "ERROR COMPLETO AL GUARDAR VENTA:",
+        "Error guardando venta en Supabase:",
         errorVenta
       );
-    
-      alert(
-        "ERROR SUPABASE:\n\n" +
-        "Código: " + (errorVenta.code || "") + "\n" +
-        "Mensaje: " + (errorVenta.message || "") + "\n" +
-        "Detalles: " + (errorVenta.details || "") + "\n" +
-        "Hint: " + (errorVenta.hint || "")
+
+      toast(
+        "No se pudo guardar la venta en Supabase."
       );
-    
+
       return;
     }
 
