@@ -482,104 +482,348 @@ async function verApartado(id) {
     `
   );
 }
-function editarApartadoProductos(id) {
+async function editarApartadoProductos(id) {
+  // Solo administrador
   if (window.perfilActual?.rol !== "administrador") {
     toast("Solo un administrador puede editar los productos");
     return;
   }
 
-  const a = DB.apartados.find(x => x.id === id);
+  // ==========================================
+  // CARGAR APARTADO
+  // ==========================================
 
-  if (!a) {
-    toast("Apartado no encontrado");
+  const { data: apartado, error: errorApartado } =
+    await supabaseClient
+      .from("apartados")
+      .select(`
+        id,
+        cliente_id,
+        fecha,
+        fecha_limite,
+        total,
+        total_abonado,
+        saldo,
+        estado
+      `)
+      .eq("id", id)
+      .single();
+
+  if (errorApartado || !apartado) {
+    console.error("Error cargando apartado:", errorApartado);
+    toast("No se pudo cargar el apartado");
     return;
   }
 
-  if (a.estado === "Entregado") {
-    toast("No puedes editar un pedido ya entregado");
+  if (String(apartado.estado || "").toLowerCase() === "entregado") {
+    toast("No se puede editar un apartado entregado");
     return;
   }
 
-  let items = (a.items || []).map(item => ({
-    productoId: item.productoId,
-    cantidad: Number(item.cantidad),
-    precio: Number(item.precio)
+
+  // ==========================================
+  // CARGAR DETALLES
+  // ==========================================
+
+  const { data: detalles, error: errorDetalles } =
+    await supabaseClient
+      .from("detalle_apartados")
+      .select(`
+        id,
+        producto_id,
+        cantidad,
+        precio_unitario,
+        subtotal
+      `)
+      .eq("apartado_id", id);
+
+  if (errorDetalles) {
+    console.error("Error cargando detalles:", errorDetalles);
+    toast("No se pudieron cargar los productos del apartado");
+    return;
+  }
+
+
+  // ==========================================
+  // CARGAR PRODUCTOS
+  // ==========================================
+
+  const { data: productos, error: errorProductos } =
+    await supabaseClient
+      .from("productos")
+      .select(`
+        id,
+        nombre,
+        marca,
+        referencia,
+        precioVenta,
+        stock,
+        activo
+      `)
+      .eq("activo", true)
+      .order("nombre");
+
+  if (errorProductos) {
+    console.error("Error cargando productos:", errorProductos);
+    toast("No se pudieron cargar los productos");
+    return;
+  }
+
+
+  // ==========================================
+  // ITEMS EDITABLES
+  // ==========================================
+
+  let items = (detalles || []).map(detalle => ({
+    productoId: detalle.producto_id,
+    cantidad: Number(detalle.cantidad),
+    precio: Number(detalle.precio_unitario)
   }));
 
-  function renderEditor() {
-    const html = items.map((item, index) => {
-      const producto = getProduct(item.productoId);
+
+  // ==========================================
+  // RENDER DEL MODAL
+  // ==========================================
+
+  const renderItems = () => {
+    const contenedor = document.getElementById("editarApartadoItems");
+
+    if (!contenedor) return;
+
+    if (!items.length) {
+      contenedor.innerHTML = `
+        <div class="empty-state">
+          No hay productos seleccionados.
+        </div>
+      `;
+      return;
+    }
+
+    contenedor.innerHTML = items.map((item, index) => {
+      const producto = productos.find(
+        p => String(p.id) === String(item.productoId)
+      );
 
       if (!producto) return "";
 
       return `
         <div
-          class="list-item"
-          style="align-items:center;gap:12px"
+          class="card"
+          style="
+            box-shadow:none;
+            margin-bottom:10px;
+            padding:12px;
+          "
         >
+          <div
+            style="
+              display:flex;
+              justify-content:space-between;
+              align-items:center;
+              gap:12px;
+            "
+          >
 
-          <div style="flex:1">
-            <b>${producto.nombre}</b>
+            <div style="flex:1;">
+              <strong>${producto.nombre}</strong>
 
-            <div class="small">
-              ${producto.marca || ""}
-              · ${money(item.precio)}
+              <div class="small">
+                ${producto.marca || ""}
+                ${producto.referencia ? " · " + producto.referencia : ""}
+              </div>
+
+              <div class="small">
+                Precio: ${money(item.precio)}
+              </div>
             </div>
+
+            <div
+              style="
+                display:flex;
+                align-items:center;
+                gap:6px;
+              "
+            >
+              <button
+                type="button"
+                class="secondary-btn"
+                onclick="cambiarCantidadEditarApartado(${index}, -1)"
+              >
+                −
+              </button>
+
+              <strong
+                style="
+                  min-width:30px;
+                  text-align:center;
+                "
+              >
+                ${item.cantidad}
+              </strong>
+
+              <button
+                type="button"
+                class="secondary-btn"
+                onclick="cambiarCantidadEditarApartado(${index}, 1)"
+              >
+                +
+              </button>
+
+              <button
+                type="button"
+                class="secondary-btn"
+                onclick="eliminarProductoEditarApartado(${index})"
+                style="margin-left:6px;"
+              >
+                Eliminar
+              </button>
+            </div>
+
           </div>
-
-          <input
-            class="input"
-            type="number"
-            min="1"
-            value="${item.cantidad}"
-            style="width:90px"
-            onchange="window._editarApartadoItems[${index}].cantidad = Number(this.value)"
-          >
-
-          <button
-            type="button"
-            class="secondary-btn"
-            onclick="window._editarApartadoItems.splice(${index},1); editarApartadoProductos(${id})"
-          >
-            Quitar
-          </button>
-
         </div>
       `;
     }).join("");
+  };
 
-    openModal(
-      "Editar productos del apartado",
-      `
-        <div class="small">
-          Modifica las cantidades o elimina productos del pedido.
-        </div>
 
-        <div class="list mt">
-          ${
-            html ||
-            `<div class="empty">
-              No hay productos en este apartado.
-            </div>`
-          }
-        </div>
+  const totalActual = () =>
+    items.reduce(
+      (sum, item) => sum + item.precio * item.cantidad,
+      0
+    );
 
-        <div class="card mt" style="box-shadow:none;background:var(--soft)">
-          <div class="row space">
-            <span>Total actualizado</span>
-            <b>
-              ${money(
-                items.reduce(
-                  (s, item) =>
-                    s + Number(item.precio) * Number(item.cantidad),
-                  0
-                )
-              )}
-            </b>
+
+  openModal(
+    "Editar productos del apartado",
+    `
+      <div>
+
+        <div
+          class="card"
+          style="
+            box-shadow:none;
+            background:var(--soft);
+            margin-bottom:16px;
+          "
+        >
+          <div class="small">
+            Total actual
+          </div>
+
+          <div class="kpi">
+            ${money(apartado.total)}
+          </div>
+
+          <div
+            class="small"
+            style="margin-top:6px;"
+          >
+            Abonado: ${money(apartado.total_abonado)}
+          </div>
+
+          <div class="small">
+            Saldo actual: ${money(apartado.saldo)}
           </div>
         </div>
 
-        <div class="modal-actions">
+
+        <div class="field">
+          <label>
+            Agregar producto
+          </label>
+
+          <select
+            class="input"
+            id="editarApartadoProducto"
+          >
+            <option value="">
+              Selecciona un producto
+            </option>
+
+            ${productos.map(producto => `
+              <option value="${producto.id}">
+                ${producto.nombre}
+                ${producto.marca ? " · " + producto.marca : ""}
+                — ${money(producto.precioVenta)}
+              </option>
+            `).join("")}
+
+          </select>
+        </div>
+
+
+        <div
+          style="
+            margin-top:10px;
+            display:flex;
+            justify-content:flex-end;
+          "
+        >
+          <button
+            type="button"
+            class="secondary-btn"
+            onclick="agregarProductoEditarApartado()"
+          >
+            + Agregar producto
+          </button>
+        </div>
+
+
+        <div
+          id="editarApartadoItems"
+          style="margin-top:16px;"
+        ></div>
+
+
+        <div
+          class="card"
+          style="
+            box-shadow:none;
+            background:var(--soft);
+            margin-top:16px;
+          "
+        >
+          <div
+            style="
+              display:flex;
+              justify-content:space-between;
+            "
+          >
+            <strong>Nuevo total</strong>
+            <strong id="editarApartadoTotal">
+              ${money(totalActual())}
+            </strong>
+          </div>
+
+          <div
+            style="
+              display:flex;
+              justify-content:space-between;
+              margin-top:8px;
+            "
+          >
+            <span>Abonado</span>
+            <span>${money(apartado.total_abonado)}</span>
+          </div>
+
+          <div
+            style="
+              display:flex;
+              justify-content:space-between;
+              margin-top:8px;
+            "
+          >
+            <strong>Nuevo saldo</strong>
+            <strong id="editarApartadoSaldo">
+              ${money(
+                totalActual() - Number(apartado.total_abonado || 0)
+              )}
+            </strong>
+          </div>
+        </div>
+
+
+        <div class="modal-actions mt">
 
           <button
             type="button"
@@ -592,172 +836,395 @@ function editarApartadoProductos(id) {
           <button
             type="button"
             class="primary-btn"
-            onclick="guardarEdicionApartado(${id})"
+            onclick="guardarEdicionApartado('${id}')"
           >
             Guardar cambios
           </button>
 
         </div>
-      `
-    );
-  }
+
+      </div>
+    `
+  );
+
+
+  // ==========================================
+  // FUNCIONES DEL MODAL
+  // ==========================================
 
   window._editarApartadoItems = items;
+  window._editarApartadoProductos = productos;
+  window._editarApartado = apartado;
 
-  renderEditor();
+
+  window.cambiarCantidadEditarApartado = function(index, delta) {
+
+    const item = window._editarApartadoItems[index];
+
+    if (!item) return;
+
+    const nuevaCantidad =
+      Number(item.cantidad) + Number(delta);
+
+    if (nuevaCantidad <= 0) {
+      window._editarApartadoItems.splice(index, 1);
+    } else {
+      item.cantidad = nuevaCantidad;
+    }
+
+    renderItems();
+
+    actualizarResumenEditarApartado();
+  };
+
+
+  window.eliminarProductoEditarApartado = function(index) {
+
+    window._editarApartadoItems.splice(index, 1);
+
+    renderItems();
+
+    actualizarResumenEditarApartado();
+  };
+
+
+  window.agregarProductoEditarApartado = function() {
+
+    const select =
+      document.getElementById("editarApartadoProducto");
+
+    const productoId = select?.value;
+
+    if (!productoId) {
+      toast("Selecciona un producto");
+      return;
+    }
+
+    const producto = productos.find(
+      p => String(p.id) === String(productoId)
+    );
+
+    if (!producto) {
+      toast("Producto no encontrado");
+      return;
+    }
+
+    const existente =
+      window._editarApartadoItems.find(
+        item =>
+          String(item.productoId) === String(producto.id)
+      );
+
+    if (existente) {
+      existente.cantidad += 1;
+    } else {
+      window._editarApartadoItems.push({
+        productoId: producto.id,
+        cantidad: 1,
+        precio: Number(producto.precioVenta || 0)
+      });
+    }
+
+    select.value = "";
+
+    renderItems();
+
+    actualizarResumenEditarApartado();
+  };
+
+
+  window.actualizarResumenEditarApartado = function() {
+
+    const total =
+      window._editarApartadoItems.reduce(
+        (sum, item) =>
+          sum + Number(item.precio) * Number(item.cantidad),
+        0
+      );
+
+    const abonado =
+      Number(apartado.total_abonado || 0);
+
+    const saldo =
+      total - abonado;
+
+    const totalElement =
+      document.getElementById("editarApartadoTotal");
+
+    const saldoElement =
+      document.getElementById("editarApartadoSaldo");
+
+    if (totalElement) {
+      totalElement.textContent = money(total);
+    }
+
+    if (saldoElement) {
+      saldoElement.textContent = money(saldo);
+    }
+  };
+
+
+  renderItems();
 }
-function guardarEdicionApartado(id) {
+async function guardarEdicionApartado(id) {
+
   if (window.perfilActual?.rol !== "administrador") {
-    toast("Solo un administrador puede editar");
+    toast("Solo un administrador puede editar los productos");
     return;
   }
 
-  const a = DB.apartados.find(x => x.id === id);
+  const items = window._editarApartadoItems || [];
 
-  if (!a) {
-    toast("Apartado no encontrado");
-    return;
-  }
-
-  const nuevosItems = window._editarApartadoItems || [];
-
-  if (!nuevosItems.length) {
+  if (!items.length) {
     toast("El apartado debe tener al menos un producto");
     return;
   }
 
-  for (const item of nuevosItems) {
-    const producto = getProduct(item.productoId);
-
-    if (!producto) {
-      toast("Uno de los productos ya no existe");
-      return;
-    }
-
-    if (item.cantidad < 1) {
-      toast("Las cantidades deben ser mayores a 0");
-      return;
-    }
-  }
-
-  /*
-   * Primero devolvemos al inventario las cantidades
-   * que tenía originalmente el apartado.
-   */
-  (a.items || []).forEach(item => {
-    const producto = getProduct(item.productoId);
-
-    if (producto) {
-      producto.stock =
-        Number(producto.stock || 0) +
-        Number(item.cantidad || 0);
-    }
-  });
-
-  /*
-   * Después reservamos nuevamente las cantidades
-   * del apartado ya editado.
-   */
-  for (const item of nuevosItems) {
-    const producto = getProduct(item.productoId);
-
-    if (Number(producto.stock || 0) < Number(item.cantidad)) {
-      toast(
-        `No hay suficiente stock de ${producto.nombre}`
-      );
-
-      /*
-       * Revertir al estado anterior.
-       */
-      (a.items || []).forEach(original => {
-        const p = getProduct(original.productoId);
-
-        if (p) {
-          p.stock =
-            Number(p.stock || 0) -
-            Number(original.cantidad || 0);
-        }
-      });
-
-      return;
-    }
-
-    producto.stock =
-      Number(producto.stock || 0) -
-      Number(item.cantidad);
-  }
-
-  a.items = nuevosItems.map(item => ({
-    productoId: item.productoId,
+  const payload = items.map(item => ({
+    producto_id: item.productoId,
     cantidad: Number(item.cantidad),
-    precio: Number(item.precio)
+    precio_unitario: Number(item.precio)
   }));
 
-  a.total = nuevosItems.reduce(
-    (s, item) =>
-      s +
-      Number(item.precio || 0) *
-      Number(item.cantidad || 0),
-    0
+  const { error } = await supabaseClient.rpc(
+    "editar_apartado_productos",
+    {
+      p_apartado_id: id,
+      p_items: payload
+    }
   );
 
-  /*
-   * Si el total cambió y el abonado ahora supera
-   * el total, lo limitamos al nuevo total.
-   */
-  a.abonado = Math.min(
-    Number(a.abonado || 0),
-    Number(a.total || 0)
-  );
+  if (error) {
+    console.error(
+      "Error editando apartado:",
+      error
+    );
 
-  a.estado =
-    a.abonado >= a.total
-      ? "Pagado"
-      : "Pendiente";
+    toast(
+      error.message ||
+      "No se pudieron guardar los cambios"
+    );
 
-  saveData();
+    return;
+  }
 
+  // Limpiar referencias temporales
   window._editarApartadoItems = null;
+  window._editarApartadoProductos = null;
+  window._editarApartado = null;
 
   closeModal();
+
   renderView("apartados");
 
-  toast("Apartado actualizado correctamente");
+  toast("Productos del apartado actualizados");
 }
-function crearApartadoDesdeVenta() {
+// ======================================================
+// APARTADOS - SUPABASE
+// ======================================================
+// ======================================================
+// APARTADOS - SUPABASE
+// ======================================================
+
+async function openApartadoModalDesdeVenta() {
+  await crearApartadoDesdeVenta();
+}
+
+
+// ======================================================
+// CREAR APARTADO DESDE LA VENTA
+// ======================================================
+
+async function crearApartadoDesdeVenta() {
 
   if (!cart || !cart.length) {
     toast("Agrega productos antes de crear el apartado");
     return;
   }
 
-  /*
-   * Guardamos una copia del carrito actual.
-   * No modificamos el carrito original.
-   */
-  const itemsVenta = cart.map(item => ({
+  const itemsIniciales = cart.map(item => ({
     productoId: item.productoId,
     cantidad: Number(item.cantidad),
     precio: Number(item.precio)
   }));
 
   /*
-   * Cerramos Finalizar venta y abrimos
-   * el formulario de apartado.
+   * Abrimos el formulario indicando que viene
+   * desde la ventana de ventas.
+   *
+   * En este caso el consumidor final se seleccionará
+   * automáticamente si no se busca otro cliente.
    */
-  closeModal();
-
-  openApartadoModalDesdeVenta(itemsVenta);
+  await abrirModalNuevoApartadoSupabase(
+    itemsIniciales,
+    true
+  );
 }
-function openApartadoModalDesdeVenta(itemsIniciales) {
 
-  let items = itemsIniciales.map(item => ({
-    productoId: item.productoId,
-    cantidad: Number(item.cantidad),
-    precio: Number(item.precio)
-  }));
 
+// ======================================================
+// NUEVO APARTADO DESDE APARTADOS
+// ======================================================
+
+async function openApartadoModal() {
+
+  await abrirModalNuevoApartadoSupabase(
+    [],
+    false
+  );
+}
+
+
+// ======================================================
+// FORMULARIO NUEVO APARTADO
+// ======================================================
+
+async function abrirModalNuevoApartadoSupabase(
+  itemsIniciales = [],
+  desdeVenta = false
+) {
+
+  let items = [...itemsIniciales];
+
+  /*
+   * Cliente seleccionado.
+   *
+   * IMPORTANTE:
+   * Si el usuario no busca ningún cliente,
+   * posteriormente utilizaremos Consumidor final.
+   */
   let clienteSeleccionado = null;
+
+
+  // ----------------------------------------------------
+  // CARGAR CLIENTES
+  // ----------------------------------------------------
+
+  const {
+    data: clientes,
+    error: errorClientes
+  } = await supabaseClient
+    .from("clientes")
+    .select(`
+      id,
+      nombre,
+      identificacion,
+      telefono,
+      direccion,
+      activo
+    `)
+    .eq("activo", true)
+    .order("nombre");
+
+  if (errorClientes) {
+
+    console.error(
+      "Error cargando clientes:",
+      errorClientes
+    );
+
+    toast("No se pudieron cargar los clientes");
+
+    return;
+  }
+
+
+  /*
+   * BUSCAR CONSUMIDOR FINAL
+   *
+   * Primero buscamos por identificación.
+   * Si no existe, también intentamos encontrarlo
+   * por nombre.
+   */
+
+  const consumidorFinal =
+    (clientes || []).find(cliente => {
+
+      const identificacion =
+        String(cliente.identificacion || "")
+          .trim()
+          .toUpperCase();
+
+      const nombre =
+        String(cliente.nombre || "")
+          .trim()
+          .toLowerCase();
+
+      return (
+        identificacion === "CONSUMIDOR_FINAL" ||
+        nombre === "consumidor final"
+      );
+
+    });
+
+
+  /*
+   * Si venimos desde una venta,
+   * Consumidor final queda seleccionado
+   * automáticamente.
+   */
+
+  if (desdeVenta && consumidorFinal) {
+
+    clienteSeleccionado =
+      consumidorFinal;
+
+  }
+
+
+  // ----------------------------------------------------
+  // CARGAR PRODUCTOS
+  // ----------------------------------------------------
+
+  const {
+    data: productos,
+    error: errorProductos
+  } = await supabaseClient
+    .from("productos")
+    .select(`
+      id,
+      nombre,
+      marca,
+      referencia,
+      precioVenta,
+      stock,
+      activo
+    `)
+    .eq("activo", true)
+    .order("nombre");
+
+  if (errorProductos) {
+
+    console.error(
+      "Error cargando productos:",
+      errorProductos
+    );
+
+    toast("No se pudieron cargar los productos");
+
+    return;
+  }
+
+
+  // ----------------------------------------------------
+  // FECHA LÍMITE
+  // ----------------------------------------------------
+
+  const fechaDefault = new Date();
+
+  fechaDefault.setDate(
+    fechaDefault.getDate() + 7
+  );
+
+  const fechaLimiteDefault =
+    fechaDefault
+      .toISOString()
+      .slice(0, 10);
+
+
+  // ----------------------------------------------------
+  // HTML
+  // ----------------------------------------------------
 
   openModal(
     "Nuevo apartado",
@@ -773,9 +1240,7 @@ function openApartadoModalDesdeVenta(itemsIniciales) {
 
           <div class="section-head">
 
-            <div>
-              <h3>Cliente</h3>
-            </div>
+            <h3>Cliente</h3>
 
             <button
               type="button"
@@ -787,6 +1252,7 @@ function openApartadoModalDesdeVenta(itemsIniciales) {
 
           </div>
 
+
           <div class="form-grid">
 
             <div class="field">
@@ -795,13 +1261,21 @@ function openApartadoModalDesdeVenta(itemsIniciales) {
                 Número de identificación
               </label>
 
-              <div class="row">
+              <div
+                style="
+                  display:flex;
+                  gap:8px;
+                  align-items:flex-start;
+                "
+              >
 
                 <input
                   class="input"
                   type="text"
                   id="apIdentificacion"
-                  placeholder="Ej: 1090123456"
+                  placeholder="Número de identificación"
+                  autocomplete="off"
+                  style="flex:1;"
                 >
 
                 <button
@@ -816,16 +1290,20 @@ function openApartadoModalDesdeVenta(itemsIniciales) {
 
             </div>
 
+
             <div class="field">
 
               <label>
-                Cliente encontrado
+                Cliente seleccionado
               </label>
 
               <input
                 class="input"
                 id="apNombreCliente"
-                value="Consumidor final"
+                value="${
+                  clienteSeleccionado?.nombre ||
+                  "Consumidor final"
+                }"
                 readonly
               >
 
@@ -833,35 +1311,25 @@ function openApartadoModalDesdeVenta(itemsIniciales) {
 
           </div>
 
+
           <div
             id="apDatosCliente"
-            class="small mt"
+            class="small"
+            style="margin-top:10px;"
           >
-            Busca un cliente registrado por su número de identificación.
-          </div>
-
-        </div>
-
-
-        <!-- FECHA LÍMITE -->
-
-        <div class="form-grid mt">
-
-          <div class="field">
-
-            <label>
-              Fecha límite
-            </label>
-
-            <input
-              class="input"
-              type="date"
-              name="fechaLimite"
-              value="${new Date(
-                Date.now() + 7 * 86400000
-              ).toISOString().slice(0,10)}"
-            >
-
+            ${
+              clienteSeleccionado
+                ? `
+                  <b>Consumidor final seleccionado</b>
+                  <div class="small">
+                    Puedes buscar otro cliente si lo deseas.
+                  </div>
+                `
+                : `
+                  Busca un cliente registrado o usa
+                  consumidor final.
+                `
+            }
           </div>
 
         </div>
@@ -874,55 +1342,189 @@ function openApartadoModalDesdeVenta(itemsIniciales) {
           <div class="section-head">
 
             <div>
-              <h3>Productos del apartado</h3>
-              <p>
-                Estos son los productos que estaban en el carrito.
-              </p>
+
+              <h3>
+                Productos
+              </h3>
+
+              <div class="small">
+                Agrega los productos que quedarán apartados.
+              </div>
+
             </div>
 
           </div>
 
+
+          <div
+            class="form-grid"
+            style="align-items:end;"
+          >
+
+            <div class="field">
+
+              <label>
+                Producto
+              </label>
+
+              <select
+                class="input"
+                id="apProducto"
+              >
+
+                <option value="">
+                  Selecciona un producto
+                </option>
+
+                ${
+                  (productos || [])
+                    .filter(
+                      p =>
+                        Number(p.stock || 0) > 0
+                    )
+                    .map(
+                      p => `
+                        <option value="${p.id}">
+                          ${p.nombre}
+                          ${
+                            p.marca
+                              ? ` - ${p.marca}`
+                              : ""
+                          }
+                          · Stock: ${p.stock}
+                          · ${money(p.precioVenta)}
+                        </option>
+                      `
+                    )
+                    .join("")
+                }
+
+              </select>
+
+            </div>
+
+
+            <div class="field">
+
+              <label>
+                Cantidad
+              </label>
+
+              <input
+                class="input"
+                id="apCantidad"
+                type="number"
+                min="1"
+                value="1"
+              >
+
+            </div>
+
+
+            <div class="field">
+
+              <button
+                type="button"
+                class="secondary-btn"
+                onclick="addApartadoItem()"
+              >
+                + Agregar
+              </button>
+
+            </div>
+
+          </div>
+
+
           <div
             id="apItems"
-            class="list"
+            style="margin-top:16px;"
           ></div>
 
         </div>
 
 
-        <!-- TOTAL Y ABONO -->
+        <!-- DATOS DEL APARTADO -->
 
-        <div
-          class="card mt"
-          style="box-shadow:none;background:var(--soft)"
-        >
+        <div class="card mt">
 
-          <div class="row space">
+          <div class="form-grid">
 
-            <span>
-              Total
-            </span>
+            <div class="field">
 
-            <b id="apTotal">
-              ${money(0)}
-            </b>
+              <label>
+                Fecha límite
+              </label>
+
+              <input
+                class="input"
+                type="date"
+                id="apFechaLimite"
+                value="${fechaLimiteDefault}"
+                required
+              >
+
+            </div>
+
+
+            <div class="field">
+
+              <label>
+                Abono inicial
+              </label>
+
+              <input
+                class="input"
+                type="number"
+                id="apAbono"
+                min="0"
+                step="0.01"
+                value="0"
+              >
+
+            </div>
 
           </div>
 
-          <div class="row space mt">
+
+          <div
+            style="
+              display:flex;
+              justify-content:space-between;
+              align-items:center;
+              margin-top:16px;
+              padding-top:16px;
+              border-top:1px solid #eee;
+            "
+          >
+
+            <strong>
+              Total
+            </strong>
+
+            <strong id="apTotal">
+              ${money(0)}
+            </strong>
+
+          </div>
+
+
+          <div
+            style="
+              display:flex;
+              justify-content:space-between;
+              align-items:center;
+              margin-top:8px;
+            "
+          >
 
             <span>
-              Abono inicial
+              Saldo inicial
             </span>
 
-            <input
-              id="apAbono"
-              class="input"
-              style="max-width:150px"
-              type="number"
-              min="0"
-              value="0"
-            >
+            <strong id="apSaldo">
+              ${money(0)}
+            </strong>
 
           </div>
 
@@ -931,20 +1533,21 @@ function openApartadoModalDesdeVenta(itemsIniciales) {
 
         <!-- BOTONES -->
 
-        <div class="modal-actions">
+        <div class="modal-actions mt">
 
           <button
             type="button"
             class="secondary-btn"
-            onclick="closeModal();finalizeSale()"
+            onclick="closeModal()"
           >
-            Volver a la venta
+            Cancelar
           </button>
 
           <button
+            type="submit"
             class="primary-btn"
           >
-            Guardar apartado
+            Crear apartado
           </button>
 
         </div>
@@ -953,933 +1556,1000 @@ function openApartadoModalDesdeVenta(itemsIniciales) {
     `
   );
 
-  const inputIdentificacion =
-    document.getElementById("apIdentificacion");
 
-  const inputNombre =
-    document.getElementById("apNombreCliente");
+  // ====================================================
+  // CONSUMIDOR FINAL
+  // ====================================================
 
-  const datosCliente =
-    document.getElementById("apDatosCliente");
+  document
+    .getElementById("btnConsumidorApartado")
+    .onclick = function() {
+
+      if (!consumidorFinal) {
+
+        toast(
+          "No se encontró el cliente Consumidor final en Supabase"
+        );
+
+        return;
+      }
+
+      clienteSeleccionado =
+        consumidorFinal;
 
 
-  /*
-   * CLIENTE
-   */
+      document
+        .getElementById("apIdentificacion")
+        .value =
+          consumidorFinal.identificacion || "";
+
+
+      document
+        .getElementById("apNombreCliente")
+        .value =
+          consumidorFinal.nombre ||
+          "Consumidor final";
+
+
+      document
+        .getElementById("apDatosCliente")
+        .innerHTML = `
+          <b>Cliente seleccionado</b>
+
+          <div class="small">
+            Consumidor final
+          </div>
+        `;
+
+    };
+
+
+  // ====================================================
+  // BUSCAR CLIENTE
+  // ====================================================
 
   document
     .getElementById("btnBuscarClienteApartado")
     .onclick = function() {
 
       const identificacion =
-        inputIdentificacion.value
-          .trim()
-          .toLowerCase();
-
-      if (!identificacion) {
-        toast("Escribe el número de identificación.");
-        return;
-      }
-
-      const cliente =
-        DB.clientes.find(
-          c =>
-            String(c.identificacion || "")
-              .trim()
-              .toLowerCase() === identificacion
-        );
-
-      if (!cliente) {
-
-        clienteSeleccionado = null;
-
-        inputNombre.value =
-          "Consumidor final";
-
-        datosCliente.innerHTML = `
-          <span style="color:#b45309">
-            ⚠️ No encontramos un cliente con esa identificación.
-          </span>
-        `;
-
-        toast("Cliente no encontrado.");
-
-        return;
-      }
-
-      clienteSeleccionado = cliente;
-
-      inputNombre.value =
-        cliente.nombre || "";
-
-      datosCliente.innerHTML = `
-        <div>
-          <b>Cliente encontrado</b>
-        </div>
-
-        <div class="small">
-          Teléfono:
-          ${cliente.telefono || "No registrado"}
-        </div>
-
-        <div class="small">
-          Dirección:
-          ${cliente.direccion || "No registrada"}
-        </div>
-      `;
-
-      toast("Cliente encontrado.");
-    };
-
-
-  /*
-   * CONSUMIDOR FINAL
-   */
-
-  document
-    .getElementById("btnConsumidorApartado")
-    .onclick = function() {
-
-      clienteSeleccionado = null;
-
-      inputIdentificacion.value = "";
-
-      inputNombre.value =
-        "Consumidor final";
-
-      datosCliente.innerHTML = `
-        Busca un cliente registrado por su número de identificación.
-      `;
-
-    };
-
-
-  /*
-   * MOSTRAR PRODUCTOS
-   */
-
-  function renderItems() {
-
-    document.getElementById("apItems").innerHTML =
-      items.map(item => {
-
-        const p =
-          getProduct(item.productoId);
-
-        if (!p) return "";
-
-        return `
-          <div class="list-item">
-
-            <div>
-              <b>${p.nombre}</b>
-
-              <div class="small">
-                ${item.cantidad} × ${money(item.precio)}
-              </div>
-            </div>
-
-            <b>
-              ${money(
-                item.precio * item.cantidad
-              )}
-            </b>
-
-          </div>
-        `;
-
-      }).join("");
-
-    document.getElementById("apTotal").textContent =
-      money(
-        items.reduce(
-          (s, i) =>
-            s +
-            Number(i.precio) *
-            Number(i.cantidad),
-          0
-        )
-      );
-  }
-
-
-  renderItems();
-
-
-  /*
-   * GUARDAR APARTADO
-   */
-
-  document.getElementById("apartadoForm").onsubmit =
-    e => {
-
-      e.preventDefault();
-
-      if (!items.length) {
-        toast("No hay productos para apartar");
-        return;
-      }
-
-      const fd =
-        new FormData(e.target);
-
-      const total =
-        items.reduce(
-          (s, i) =>
-            s +
-            Number(i.precio) *
-            Number(i.cantidad),
-          0
-        );
-
-      const abono =
-        Math.min(
-          total,
-          Number(
-            document.getElementById("apAbono").value
-          ) || 0
-        );
+        document
+          .getElementById("apIdentificacion")
+          .value
+          .trim();
 
 
       /*
-       * DESCONTAR INVENTARIO
+       * Si dejan vacío el campo,
+       * NO obligamos a buscar.
+       *
+       * Se vuelve automáticamente a
+       * Consumidor final.
        */
 
-      for (const item of items) {
+      if (!identificacion) {
 
-        const producto =
-          getProduct(item.productoId);
+        if (!consumidorFinal) {
 
-        if (!producto) {
-          toast("No se encontró uno de los productos.");
-          return;
-        }
-
-        const nuevoStock =
-          Number(producto.stock || 0) -
-          Number(item.cantidad || 0);
-
-        if (nuevoStock < 0) {
           toast(
-            `No hay suficiente stock para ${producto.nombre}.`
+            "No se encontró el cliente Consumidor final"
           );
 
           return;
         }
 
-        producto.stock = nuevoStock;
-      }
+        clienteSeleccionado =
+          consumidorFinal;
 
 
-      /*
-       * CREAR APARTADO
-       */
-
-      DB.apartados.unshift({
-
-        id: Date.now(),
-
-        clienteId:
-          clienteSeleccionado?.id || null,
-
-        identificacionCliente:
-          clienteSeleccionado?.identificacion || "",
-
-        fecha:
-          new Date()
-            .toISOString()
-            .slice(0, 10),
-
-        fechaLimite:
-          fd.get("fechaLimite"),
-
-        items: [...items],
-
-        total: total,
-
-        abonado: abono,
-
-        estado:
-          abono >= total
-            ? "Pagado"
-            : "Pendiente"
-
-      });
+        document
+          .getElementById("apNombreCliente")
+          .value =
+            consumidorFinal.nombre ||
+            "Consumidor final";
 
 
-      saveData();
+        document
+          .getElementById("apDatosCliente")
+          .innerHTML = `
+            <b>Consumidor final</b>
 
-      /*
-       * Vaciar carrito porque los productos
-       * ahora pertenecen al apartado.
-       */
-      cart = [];
-
-      closeModal();
-
-      renderView("apartados");
-
-      toast("Apartado creado correctamente");
-    };
-}
-
-
-function openApartadoModal(){
-
-  let items = [];
-  let clienteSeleccionado = null;
-
-  openModal(
-    "Nuevo apartado",
-
-    `<form id="apartadoForm">
-
-      <!-- CLIENTE -->
-
-      <div
-        class="card"
-        style="box-shadow:none;background:var(--soft)"
-      >
-
-        <div class="section-head">
-
-          <h3>Cliente</h3>
-
-          <button
-            type="button"
-            class="secondary-btn"
-            id="btnConsumidorApartado"
-          >
-            Usar consumidor final
-          </button>
-
-        </div>
-
-        <div class="form-grid">
-
-          <div class="field">
-
-            <label>
-              Número de identificación
-            </label>
-
-            <div class="row">
-
-              <input
-                class="input"
-                type="text"
-                id="apIdentificacion"
-                placeholder="Ej: 1090123456"
-              >
-
-              <button
-                type="button"
-                class="secondary-btn"
-                id="btnBuscarClienteApartado"
-              >
-                🔍 Buscar
-              </button>
-
+            <div class="small">
+              No se seleccionó un cliente específico.
             </div>
-
-          </div>
-
-
-          <div class="field">
-
-            <label>
-              Cliente encontrado
-            </label>
-
-            <input
-              class="input"
-              id="apNombreCliente"
-              value="Consumidor final"
-              readonly
-            >
-
-          </div>
-
-        </div>
-
-
-        <div
-          id="apDatosCliente"
-          class="small mt"
-        >
-          Busca un cliente registrado por su número de identificación.
-        </div>
-
-      </div>
-
-
-      <!-- FECHA LÍMITE -->
-
-      <div class="form-grid mt">
-
-        <div class="field">
-
-          <label>
-            Fecha límite
-          </label>
-
-          <input
-            class="input"
-            type="date"
-            name="fechaLimite"
-            value="${new Date(
-              Date.now() + 7 * 86400000
-            ).toISOString().slice(0,10)}"
-          >
-
-        </div>
-
-      </div>
-
-
-      <!-- PRODUCTOS -->
-
-      <div class="field mt">
-
-        <label>
-          Producto
-        </label>
-
-        <select
-          id="apProduct"
-          class="select"
-        >
-
-          ${DB.productos
-            .filter(p => p.stock > 0)
-            .map(p =>
-              `<option value="${p.id}">
-                ${p.nombre} · ${money(p.precioVenta)} · stock ${p.stock}
-              </option>`
-            )
-            .join("")}
-
-        </select>
-
-      </div>
-
-
-      <div class="row mt">
-
-        <input
-          id="apQty"
-          class="input"
-          type="number"
-          min="1"
-          value="1"
-        >
-
-        <button
-          type="button"
-          class="primary-btn"
-          onclick="addApartadoItem()"
-        >
-          Agregar producto
-        </button>
-
-      </div>
-
-
-      <div
-        id="apItems"
-        class="list mt"
-      ></div>
-
-
-      <!-- TOTAL Y ABONO -->
-
-      <div
-        class="card mt"
-        style="box-shadow:none;background:var(--soft)"
-      >
-
-        <div class="row space">
-
-          <span>
-            Total
-          </span>
-
-          <b id="apTotal">
-            ${money(0)}
-          </b>
-
-        </div>
-
-
-        <div class="row space mt">
-
-          <span>
-            Abono inicial
-          </span>
-
-          <input
-            id="apAbono"
-            class="input"
-            style="max-width:150px"
-            type="number"
-            min="0"
-            value="0"
-          >
-
-        </div>
-
-      </div>
-
-
-      <!-- BOTONES -->
-
-      <div class="modal-actions">
-
-        <button
-          type="button"
-          class="secondary-btn"
-          onclick="closeModal()"
-        >
-          Cancelar
-        </button>
-
-        <button
-          class="primary-btn"
-        >
-          Guardar apartado
-        </button>
-
-      </div>
-
-    </form>`
-  );
-
-
-  // ==========================================
-  // ELEMENTOS
-  // ==========================================
-
-  const inputIdentificacion =
-    document.getElementById(
-      "apIdentificacion"
-    );
-
-  const inputNombre =
-    document.getElementById(
-      "apNombreCliente"
-    );
-
-  const datosCliente =
-    document.getElementById(
-      "apDatosCliente"
-    );
-
-
-  // ==========================================
-  // BUSCAR CLIENTE
-  // ==========================================
-
-  document
-    .getElementById(
-      "btnBuscarClienteApartado"
-    )
-    .onclick = function(){
-
-      const identificacion =
-        inputIdentificacion.value
-          .trim()
-          .toLowerCase();
-
-
-      if(!identificacion){
-
-        toast(
-          "Escribe el número de identificación."
-        );
-
-        inputIdentificacion.focus();
+          `;
 
         return;
       }
 
 
       const cliente =
-        DB.clientes.find(
+        (clientes || []).find(
           c =>
-            String(
-              c.identificacion || ""
-            )
-            .trim()
-            .toLowerCase()
-            === identificacion
+            String(c.identificacion || "")
+              .trim()
+              .toLowerCase()
+            ===
+            identificacion.toLowerCase()
         );
 
 
-      if(!cliente){
+      if (!cliente) {
 
-        clienteSeleccionado = null;
+        /*
+         * Si la búsqueda falla,
+         * regresamos a Consumidor final.
+         */
 
-        inputNombre.value =
-          "Consumidor final";
+        clienteSeleccionado =
+          consumidorFinal || null;
 
-        datosCliente.innerHTML =
-          `
-          <span style="color:#b45309">
-            ⚠️ No encontramos un cliente con esa identificación.
-          </span>
+
+        document
+          .getElementById("apNombreCliente")
+          .value =
+            consumidorFinal?.nombre ||
+            "Consumidor final";
+
+
+        document
+          .getElementById("apDatosCliente")
+          .innerHTML = `
+            <span style="color:#b45309">
+              ⚠️ No encontramos ese cliente.
+              Se utilizará Consumidor final.
+            </span>
           `;
 
         toast(
-          "Cliente no encontrado."
+          "Cliente no encontrado. Se utilizará Consumidor final."
         );
 
         return;
       }
 
 
+      /*
+       * Cliente encontrado correctamente.
+       */
+
       clienteSeleccionado =
         cliente;
 
 
-      inputNombre.value =
-        cliente.nombre || "";
+      document
+        .getElementById("apNombreCliente")
+        .value =
+          cliente.nombre || "";
 
 
-      datosCliente.innerHTML =
-        `
-        <div>
-          <b>Cliente encontrado</b>
-        </div>
+      document
+        .getElementById("apDatosCliente")
+        .innerHTML = `
+          <div>
+            <b>Cliente encontrado</b>
+          </div>
 
-        <div class="small">
-          Teléfono:
-          ${cliente.telefono || "No registrado"}
-        </div>
+          <div class="small">
+            Teléfono:
+            ${cliente.telefono || "No registrado"}
+          </div>
 
-        <div class="small">
-          Dirección:
-          ${cliente.direccion || "No registrada"}
-        </div>
+          <div class="small">
+            Dirección:
+            ${cliente.direccion || "No registrada"}
+          </div>
         `;
 
-      toast(
-        "Cliente encontrado."
-      );
+      toast("Cliente encontrado");
 
     };
 
 
-  // ==========================================
-  // CONSUMIDOR FINAL
-  // ==========================================
-
-  document
-    .getElementById(
-      "btnConsumidorApartado"
-    )
-    .onclick = function(){
-
-      clienteSeleccionado = null;
-
-      inputIdentificacion.value = "";
-
-      inputNombre.value =
-        "Consumidor final";
-
-      datosCliente.innerHTML =
-        `
-        Busca un cliente registrado por su número de identificación.
-        `;
-
-      inputIdentificacion.focus();
-
-    };
-
-
-  // ==========================================
-  // AGREGAR PRODUCTO
-  // ==========================================
+  // ====================================================
+  // PRODUCTOS
+  // ====================================================
 
   window._apItems = items;
 
 
-  window.addApartadoItem = () => {
+  window.addApartadoItem = function() {
 
-    const id =
+    const productoId =
+      document
+        .getElementById("apProducto")
+        .value;
+
+
+    const cantidad =
       Number(
-        document.getElementById(
-          "apProduct"
-        ).value
+        document
+          .getElementById("apCantidad")
+          .value
       );
 
 
-    const qty =
-      Number(
-        document.getElementById(
-          "apQty"
-        ).value
-      );
-
-
-    const p =
-      getProduct(id);
-
-
-    if(
-      !p ||
-      qty < 1 ||
-      qty > p.stock
-    ){
+    if (!productoId) {
 
       toast(
-        "Cantidad no disponible"
+        "Selecciona un producto"
       );
 
       return;
     }
 
 
-    const old =
-      items.find(
-        i =>
-          i.productoId === id
+    if (
+      !Number.isFinite(cantidad) ||
+      cantidad <= 0
+    ) {
+
+      toast(
+        "Ingresa una cantidad válida"
+      );
+
+      return;
+    }
+
+
+    const producto =
+      (productos || []).find(
+        p =>
+          String(p.id) ===
+          String(productoId)
       );
 
 
-    if(old){
+    if (!producto) {
 
-      old.cantidad =
-        Math.min(
-          p.stock,
-          old.cantidad + qty
-        );
+      toast(
+        "Producto no encontrado"
+      );
 
-    }else{
+      return;
+    }
+
+
+    const existente =
+      items.find(
+        i =>
+          String(i.productoId) ===
+          String(producto.id)
+      );
+
+
+    const cantidadActual =
+      existente
+        ? Number(existente.cantidad)
+        : 0;
+
+
+    if (
+      cantidadActual + cantidad >
+      Number(producto.stock || 0)
+    ) {
+
+      toast(
+        `Stock insuficiente para ${producto.nombre}`
+      );
+
+      return;
+    }
+
+
+    if (existente) {
+
+      existente.cantidad =
+        cantidadActual + cantidad;
+
+    } else {
 
       items.push({
-        productoId: id,
-        cantidad: qty,
-        precio: p.precioVenta
+
+        productoId:
+          producto.id,
+
+        cantidad:
+          cantidad,
+
+        precio:
+          Number(
+            producto.precioVenta || 0
+          )
+
       });
 
     }
 
 
-    renderApItems();
+    renderApartadoItems();
+
+
+    document
+      .getElementById("apCantidad")
+      .value = 1;
 
   };
 
 
-  // ==========================================
-  // MOSTRAR PRODUCTOS
-  // ==========================================
+  // ====================================================
+  // RENDER PRODUCTOS
+  // ====================================================
 
-  function renderApItems(){
+  function renderApartadoItems() {
 
-    document.getElementById(
-      "apItems"
-    ).innerHTML =
-
-      items
-        .map(i => {
-
-          const p =
-            getProduct(
-              i.productoId
-            );
-
-          return `
-            <div class="list-item">
-
-              <span>
-                ${p.nombre}
-                × ${i.cantidad}
-              </span>
-
-              <b>
-                ${money(
-                  i.precio * i.cantidad
-                )}
-              </b>
-
-            </div>
-          `;
-
-        })
-        .join("")
-
-      ||
-
-      '<div class="empty">No has agregado productos.</div>';
+    const contenedor =
+      document.getElementById("apItems");
 
 
-    document.getElementById(
-      "apTotal"
-    ).textContent =
+    if (!items.length) {
 
-      money(
-        items.reduce(
-          (s,i) =>
-            s + i.precio * i.cantidad,
-          0
-        )
-      );
+      contenedor.innerHTML = `
+        <div class="empty-state">
+          No hay productos agregados.
+        </div>
+      `;
 
-  }
-
-
-  // ==========================================
-  // GUARDAR APARTADO
-  // ==========================================
-
-  document.getElementById(
-    "apartadoForm"
-  ).onsubmit = e => {
-
-    e.preventDefault();
-
-
-    if(!items.length){
-
-      toast(
-        "Agrega al menos un producto"
-      );
+      actualizarTotales();
 
       return;
     }
 
 
-    const fd =
-      new FormData(e.target);
+    contenedor.innerHTML =
+      items
+        .map(
+          (item, index) => {
 
+            const producto =
+              (productos || []).find(
+                p =>
+                  String(p.id) ===
+                  String(item.productoId)
+              );
+
+
+            const nombre =
+              producto?.nombre ||
+              "Producto";
+
+
+            const subtotal =
+              Number(item.precio) *
+              Number(item.cantidad);
+
+
+            return `
+              <div
+                style="
+                  display:flex;
+                  justify-content:space-between;
+                  align-items:center;
+                  gap:10px;
+                  padding:10px 0;
+                  border-bottom:1px solid #eee;
+                "
+              >
+
+                <div style="flex:1;">
+
+                  <strong>
+                    ${nombre}
+                  </strong>
+
+                  <div class="small">
+                    ${money(item.precio)}
+                    ×
+                    ${item.cantidad}
+                  </div>
+
+                </div>
+
+
+                <strong>
+                  ${money(subtotal)}
+                </strong>
+
+
+                <div
+                  style="
+                    display:flex;
+                    gap:6px;
+                  "
+                >
+
+                  <button
+                    type="button"
+                    class="secondary-btn"
+                    onclick="
+                      cambiarCantidadNuevoApartado(
+                        ${index},
+                        -1
+                      )
+                    "
+                  >
+                    −
+                  </button>
+
+
+                  <button
+                    type="button"
+                    class="secondary-btn"
+                    onclick="
+                      cambiarCantidadNuevoApartado(
+                        ${index},
+                        1
+                      )
+                    "
+                  >
+                    +
+                  </button>
+
+
+                  <button
+                    type="button"
+                    class="secondary-btn"
+                    onclick="
+                      eliminarProductoNuevoApartado(
+                        ${index}
+                      )
+                    "
+                  >
+                    🗑
+                  </button>
+
+                </div>
+
+              </div>
+            `;
+
+          }
+        )
+        .join("");
+
+
+    actualizarTotales();
+
+  }
+
+
+  // ====================================================
+  // CAMBIAR CANTIDAD
+  // ====================================================
+
+  window.cambiarCantidadNuevoApartado =
+    function(index, delta) {
+
+      const item =
+        items[index];
+
+      if (!item) return;
+
+
+      const producto =
+        (productos || []).find(
+          p =>
+            String(p.id) ===
+            String(item.productoId)
+        );
+
+
+      const nuevaCantidad =
+        Number(item.cantidad) +
+        Number(delta);
+
+
+      if (nuevaCantidad <= 0) {
+
+        items.splice(
+          index,
+          1
+        );
+
+        renderApartadoItems();
+
+        return;
+      }
+
+
+      if (
+        nuevaCantidad >
+        Number(producto?.stock || 0)
+      ) {
+
+        toast(
+          "No hay suficiente stock"
+        );
+
+        return;
+      }
+
+
+      item.cantidad =
+        nuevaCantidad;
+
+
+      renderApartadoItems();
+
+    };
+
+
+  // ====================================================
+  // ELIMINAR PRODUCTO
+  // ====================================================
+
+  window.eliminarProductoNuevoApartado =
+    function(index) {
+
+      items.splice(
+        index,
+        1
+      );
+
+      renderApartadoItems();
+
+    };
+
+
+  // ====================================================
+  // TOTALES
+  // ====================================================
+
+  function actualizarTotales() {
 
     const total =
       items.reduce(
-        (s,i) =>
-          s + i.precio * i.cantidad,
+        (sum, item) =>
+          sum +
+          Number(item.precio) *
+          Number(item.cantidad),
         0
       );
 
 
-    const abono =
-      Math.min(
-        total,
-        Number(
-          document.getElementById(
-            "apAbono"
-          ).value
-        ) || 0
+    const campoAbono =
+      document.getElementById(
+        "apAbono"
       );
 
 
-    // ========================================
-    // DESCONTAR INVENTARIO
-    // ========================================
-
-    items.forEach(i => {
-
-      const producto =
-        getProduct(
-          i.productoId
-        );
+    let abono =
+      Number(
+        campoAbono?.value || 0
+      );
 
 
-      if(producto){
+    if (abono < 0) {
+      abono = 0;
+    }
 
-        producto.stock -=
-          i.cantidad;
+
+    if (abono > total) {
+
+      abono = total;
+
+      if (campoAbono) {
+        campoAbono.value =
+          abono;
+      }
+
+    }
+
+
+    const saldo =
+      total - abono;
+
+
+    document
+      .getElementById("apTotal")
+      .textContent =
+        money(total);
+
+
+    document
+      .getElementById("apSaldo")
+      .textContent =
+        money(saldo);
+
+  }
+
+
+  document
+    .getElementById("apAbono")
+    .addEventListener(
+      "input",
+      actualizarTotales
+    );
+
+
+  // ====================================================
+  // GUARDAR APARTADO
+  // ====================================================
+
+  document
+    .getElementById("apartadoForm")
+    .onsubmit = async function(event) {
+
+      event.preventDefault();
+
+
+      /*
+       * SI NO SE SELECCIONÓ CLIENTE,
+       * USAMOS CONSUMIDOR FINAL.
+       */
+
+      if (!clienteSeleccionado) {
+
+        clienteSeleccionado =
+          consumidorFinal;
 
       }
 
-    });
- //
 
-    // ========================================
-    // CREAR APARTADO
-    // ========================================
+      /*
+       * Como la columna cliente_id
+       * de apartados es obligatoria,
+       * debe existir Consumidor final
+       * en la tabla clientes.
+       */
 
-    DB.apartados.unshift({
+      if (!clienteSeleccionado) {
 
-      id:
-        Date.now(),
+        toast(
+          "No se encontró el cliente Consumidor final. Créalo en Clientes antes de continuar."
+        );
 
-      clienteId:
-        clienteSeleccionado?.id || null,
-
-      identificacionCliente:
-        clienteSeleccionado?.identificacion || "",
-
-      fecha:
-        new Date()
-          .toISOString()
-          .slice(0,10),
-
-      fechaLimite:
-        fd.get("fechaLimite"),
-
-      items:
-        [...items],
-
-      total:
-        total,
-
-      abonado:
-        abono,
-
-      estado:
-        abono >= total
-          ? "Pagado"
-          : "Pendiente"
-
-    });
+        return;
+      }
 
 
-    saveData();
+      if (!items.length) {
+
+        toast(
+          "Agrega al menos un producto"
+        );
+
+        return;
+      }
+
+
+      const fechaLimite =
+        document
+          .getElementById("apFechaLimite")
+          .value;
+
+
+      if (!fechaLimite) {
+
+        toast(
+          "Selecciona una fecha límite"
+        );
+
+        return;
+      }
+
+
+      const total =
+        items.reduce(
+          (sum, item) =>
+            sum +
+            Number(item.precio) *
+            Number(item.cantidad),
+          0
+        );
+
+
+      const abono =
+        Math.min(
+          total,
+          Math.max(
+            0,
+            Number(
+              document
+                .getElementById("apAbono")
+                .value
+            ) || 0
+          )
+        );
+
+
+      const payload =
+        items.map(item => ({
+          producto_id:
+            item.productoId,
+
+          cantidad:
+            Number(item.cantidad),
+
+          precio_unitario:
+            Number(item.precio)
+        }));
+
+
+      const confirmar =
+        confirm(
+          "¿Deseas crear este apartado?\n\n" +
+          "Cliente: " +
+          (
+            clienteSeleccionado.nombre ||
+            "Consumidor final"
+          ) +
+          "\n" +
+          "Total: " +
+          money(total) +
+          "\n" +
+          "Abono: " +
+          money(abono) +
+          "\n" +
+          "Saldo: " +
+          money(total - abono)
+        );
+
+
+      if (!confirmar) {
+        return;
+      }
+
+
+      /*
+       * CREAR EN SUPABASE
+       */
+
+      const {
+        data,
+        error
+      } =
+        await supabaseClient.rpc(
+          "crear_apartado",
+          {
+            p_cliente_id:
+              clienteSeleccionado.id,
+
+            p_fecha_limite:
+              fechaLimite,
+
+            p_abono:
+              abono,
+
+            p_items:
+              payload
+          }
+        );
+
+
+      if (error) {
+
+        console.error(
+          "Error creando apartado:",
+          error
+        );
+
+        toast(
+          error.message ||
+          "No se pudo crear el apartado"
+        );
+
+        return;
+      }
+
+
+      console.log(
+        "Apartado creado:",
+        data
+      );
+
+
+      /*
+       * SI VIENE DESDE VENTA,
+       * VACÍAMOS EL CARRITO.
+       */
+
+      if (
+        desdeVenta &&
+        typeof cart !== "undefined" &&
+        Array.isArray(cart)
+      ) {
+
+        cart = [];
+
+      }
+
+
+      closeModal();
+
+
+      await renderView(
+        "apartados"
+      );
+
+
+      toast(
+        "Apartado creado correctamente"
+      );
+
+    };
+
+
+  // ====================================================
+  // PRIMER RENDER
+  // ====================================================
+
+  renderApartadoItems();
+
+  actualizarTotales();
+
+}
+async function registerAbono(id) {
+  if (!id) {
+    toast("Apartado no válido");
+    return;
+  }
+
+  const { data: apartado, error } = await supabaseClient
+    .from("apartados")
+    .select(`
+      id,
+      total,
+      total_abonado,
+      saldo,
+      estado
+    `)
+    .eq("id", id)
+    .single();
+
+  if (error || !apartado) {
+    console.error("Error cargando apartado para abono:", error);
+    toast("No se pudo cargar el apartado");
+    return;
+  }
+
+  const saldo = Number(apartado.saldo || 0);
+
+  if (saldo <= 0) {
+    toast("Este apartado ya está pagado");
+    return;
+  }
+
+  openModal(
+    "Registrar abono",
+    `
+      <form id="abonoForm">
+        <div class="form-grid">
+          <div class="field">
+            <label>Saldo pendiente</label>
+            <input
+              type="text"
+              value="${money(saldo)}"
+              readonly
+            >
+          </div>
+
+          <div class="field">
+            <label>Valor del abono</label>
+            <input
+              type="number"
+              name="valor"
+              min="0.01"
+              max="${saldo}"
+              step="0.01"
+              required
+              autofocus
+            >
+          </div>
+        </div>
+
+        <div class="modal-actions mt">
+          <button
+            type="button"
+            class="secondary-btn"
+            onclick="closeModal()"
+          >
+            Cancelar
+          </button>
+
+          <button
+            type="submit"
+            class="primary-btn"
+          >
+            Registrar abono
+          </button>
+        </div>
+      </form>
+    `
+  );
+
+  document.getElementById("abonoForm").onsubmit = async event => {
+    event.preventDefault();
+
+    const formData = new FormData(event.target);
+    const valor = Number(formData.get("valor") || 0);
+
+    if (!Number.isFinite(valor) || valor <= 0) {
+      toast("Ingresa un valor válido");
+      return;
+    }
+
+    if (valor > saldo) {
+      toast("El abono no puede superar el saldo pendiente");
+      return;
+    }
+
+    const { error: errorAbono } = await supabaseClient.rpc(
+      "registrar_abono_apartado",
+      {
+        p_apartado_id: id,
+        p_abono: valor
+      }
+    );
+
+    if (errorAbono) {
+      console.error("Error registrando abono:", errorAbono);
+      toast(errorAbono.message || "No se pudo registrar el abono");
+      return;
+    }
 
     closeModal();
-
-    renderView(
-      "apartados"
-    );
-
-    toast(
-      "Apartado creado"
-    );
-
+    await renderView("apartados");
+    toast("Abono registrado correctamente");
   };
-
 }
-function registerAbono(id){
-  const a=DB.apartados.find(x=>x.id===id),saldo=a.total-a.abonado;
-  openModal("Registrar abono",`<div class="card" style="box-shadow:none;background:var(--soft)"><div class="small">Saldo pendiente</div><div class="kpi">${money(saldo)}</div></div><form id="abonoForm" class="mt"><div class="field"><label>Valor del abono</label><input class="input" name="valor" type="number" min="1" max="${saldo}" value="${saldo}"></div><div class="modal-actions"><button type="button" class="secondary-btn" onclick="closeModal()">Cancelar</button><button class="primary-btn">Registrar abono</button></div></form>`);
-  document.getElementById("abonoForm").onsubmit=e=>{e.preventDefault();a.abonado=Math.min(a.total,a.abonado+Number(new FormData(e.target).get("valor")));if(a.abonado>=a.total)a.estado="Pagado";saveData();closeModal();renderView("apartados");toast("Abono registrado")};
-}
-function deliverApartado(id) {
-  const a = DB.apartados.find(x => x.id === id);
+async function deliverApartado(id) {
+  if (!id) {
+    toast("Apartado no válido");
+    return;
+  }
 
-  if (!a) {
+  const { data: apartado, error: errorApartado } = await supabaseClient
+    .from("apartados")
+    .select(`
+      id,
+      saldo,
+      estado
+    `)
+    .eq("id", id)
+    .single();
+
+  if (errorApartado || !apartado) {
+    console.error("Error cargando apartado:", errorApartado);
     toast("Apartado no encontrado");
     return;
   }
 
-  if (a.abonado < a.total) {
+  const saldo = Number(apartado.saldo || 0);
+
+  if (saldo > 0) {
     toast("El pedido aún tiene saldo pendiente");
     return;
   }
 
+  if (String(apartado.estado || "").toLowerCase() === "entregado") {
+    toast("Este apartado ya fue entregado");
+    return;
+  }
+
   const confirmar = confirm(
-    `¿Confirmas que deseas entregar el pedido #${a.id}?\n\n` +
-    `Esta acción marcará el apartado como entregado.`
+    "¿Confirmas que este apartado fue entregado al cliente?"
   );
 
-  if (!confirmar) return;
+  if (!confirmar) {
+    return;
+  }
 
-  a.estado = "Entregado";
+  const { error } = await supabaseClient.rpc(
+    "entregar_apartado",
+    {
+      p_apartado_id: id
+    }
+  );
 
-  saveData();
-  renderView("apartados");
+  if (error) {
+    console.error("Error entregando apartado:", error);
+    toast(error.message || "No se pudo entregar el apartado");
+    return;
+  }
 
-  toast("Pedido entregado correctamente");
+  await renderView("apartados");
+  toast("Apartado entregado correctamente");
 }
 async function renderApartados() {
   const cargado = await cargarApartadosSupabase();
