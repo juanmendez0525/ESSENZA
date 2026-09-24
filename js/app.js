@@ -81,7 +81,7 @@ function renderView(view="inicio") {
 
   if (view === "inventario") {
     cargarProductosDesdeSupabase().then(() => { 
-    root.innerHTML = renderInventario();
+      root.innerHTML = renderInventario();
     });
     return;
   }
@@ -93,10 +93,13 @@ function renderView(view="inicio") {
     return;
   }
 
-  root.innerHTML =
+  Promise.resolve(
     renderers[view]
       ? renderers[view]()
-      : renderInicio();
+      : renderInicio()
+  ).then(html => {
+    root.innerHTML = html;
+  });
 }
 
 function configurarMenuPorRol() {

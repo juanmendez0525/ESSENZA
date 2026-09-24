@@ -115,6 +115,8 @@ function removeFromCart(id){
 }
 function cartTotal(){return cart.reduce((s,i)=>s+i.precio*i.cantidad,0)}
 
+
+
 function finalizeSale(){
   if(!cart.length){
     toast("Agrega productos a la venta");
@@ -280,23 +282,34 @@ function finalizeSale(){
 
       </div>
 
-      <div class="modal-actions mt">
-
+      <div
+        class="modal-actions mt"
+        style="display:flex;justify-content:space-between;align-items:center;gap:10px;"
+      >
         <button
           type="button"
           class="secondary-btn"
-          onclick="closeModal()"
+          onclick="crearApartadoDesdeVenta()"
         >
-          Cancelar
+          📦 Crear apartado
         </button>
 
-        <button
-          type="submit"
-          class="primary-btn"
-        >
-          Confirmar venta
-        </button>
+        <div style="display:flex;gap:10px;align-items:center;">
+          <button
+            type="button"
+            class="secondary-btn"
+            onclick="closeModal()"
+          >
+            Cancelar
+          </button>
 
+          <button
+            type="submit"
+            class="primary-btn"
+          >
+            Confirmar venta
+          </button>
+        </div>
       </div>
 
     </form>
@@ -872,7 +885,196 @@ function finalizeSale(){
     );
   };
 }
+async function crearApartadoDesdeVenta() {
+  if (!cart || !cart.length) {
+    toast("Agrega productos antes de crear el apartado");
+    return;
+  }
 
+  const userResult = await supabaseClient.auth.getUser();
+
+  if (userResult.error || !userResult.data.user) {
+    toast("No hay una sesión activa");
+    return;
+  }
+
+  const clienteId = document.getElementById("clienteId")?.value || "";
+
+  let clienteIdFinal = clienteId;
+
+  // Si no se seleccionó cliente, usar Consumidor final
+  if (!clienteIdFinal) {
+    const { data: consumidor, error } = await supabaseClient
+      .from("clientes")
+      .select("id")
+      .eq("identificacion", "CONSUMIDOR_FINAL")
+      .eq("activo", true)
+      .single();
+
+    if (error || !consumidor) {
+      toast("No se encontró el cliente Consumidor final");
+      return;
+    }
+
+    clienteIdFinal = consumidor.id;
+  }
+
+  const items = cart.map(item => ({
+    producto_id: item.productoId,
+    cantidad: Number(item.cantidad),
+    precio_unitario: Number(item.precio)
+  }));
+
+  const total = items.reduce(
+    (sum, item) => sum + item.precio_unitario * item.cantidad,
+    0
+  );
+
+  const fechaDefault = new Date();
+  fechaDefault.setDate(fechaDefault.getDate() + 7);
+
+  const fechaLimite = fechaDefault.toISOString().slice(0, 10);
+
+  closeModal();
+
+  openModal(
+    "Crear apartado",
+    `
+      <form id="crearApartadoForm">
+
+        <div class="form-grid">
+
+          <div class="field">
+            <label>Fecha límite</label>
+            <input
+              type="date"
+              name="fechaLimite"
+              value="${fechaLimite}"
+              required
+            >
+          </div>
+
+          <div class="field">
+            <label>Abono inicial</label>
+            <input
+              type="number"
+              name="abono"
+              min="0"
+              max="${total}"
+              step="0.01"
+              value="0"
+            >
+          </div>
+
+        </div>
+
+        <div style="
+          margin-top:16px;
+          padding:14px;
+          border:1px solid #eee;
+          border-radius:10px;
+        ">
+          <strong>Productos del apartado</strong>
+
+          <div style="margin-top:10px;">
+            ${cart.map(item => `
+              <div style="
+                display:flex;
+                justify-content:space-between;
+                gap:10px;
+                padding:6px 0;
+              ">
+                <span>
+                  ${item.cantidad} × ${item.nombre}
+                </span>
+
+                <strong>
+                  ${money(item.precio * item.cantidad)}
+                </strong>
+              </div>
+            `).join("")}
+          </div>
+
+          <div style="
+            display:flex;
+            justify-content:space-between;
+            border-top:1px solid #eee;
+            margin-top:10px;
+            padding-top:10px;
+          ">
+            <strong>Total</strong>
+            <strong>${money(total)}</strong>
+          </div>
+        </div>
+
+        <div class="modal-actions mt">
+
+          <button
+            type="button"
+            class="secondary-btn"
+            onclick="closeModal()"
+          >
+            Cancelar
+          </button>
+
+          <button
+            type="submit"
+            class="primary-btn"
+          >
+            Crear apartado
+          </button>
+
+        </div>
+
+      </form>
+    `
+  );
+
+  document.getElementById("crearApartadoForm").onsubmit = async e => {
+    e.preventDefault();
+
+    const fd = new FormData(e.target);
+
+    const fechaLimite = fd.get("fechaLimite");
+    const abono = Number(fd.get("abono") || 0);
+
+    if (!fechaLimite) {
+      toast("Selecciona una fecha límite");
+      return;
+    }
+
+    if (abono < 0 || abono > total) {
+      toast("El abono no puede superar el total");
+      return;
+    }
+
+    const { data, error } = await supabaseClient.rpc(
+      "crear_apartado",
+      {
+        p_cliente_id: clienteIdFinal,
+        p_fecha_limite: fechaLimite,
+        p_abono: abono,
+        p_items: items
+      }
+    );
+
+    if (error) {
+      console.error("Error creando apartado:", error);
+      toast(error.message || "No se pudo crear el apartado");
+      return;
+    }
+
+    console.log("Apartado creado:", data);
+
+    cart = [];
+
+    closeModal();
+
+    renderView("apartados");
+
+    toast("Apartado creado correctamente");
+  };
+}
 function showReceipt(sale) {
 
   const fechaVenta = new Date();
