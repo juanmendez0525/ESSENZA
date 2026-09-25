@@ -80,6 +80,13 @@ function renderView(view="inicio") {
   };
 
 
+
+  if (view === "clientes") {
+  cargarClientesDesdeSupabase().then(() => {
+    root.innerHTML = renderClientes();
+  });
+  return;
+  }
   
   if (view === "inventario") {
     cargarProductosDesdeSupabase().then(() => { 
