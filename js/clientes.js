@@ -278,6 +278,33 @@ function openClientModal(id = null, opciones = {}){
     renderView("clientes");
   };
 }
+async function cargarClientesDesdeSupabase() {
+
+  const { data, error } = await supabaseClient
+    .from("clientes")
+    .select(`
+      id,
+      nombre,
+      identificacion,
+      telefono,
+      email,
+      direccion,
+      notas,
+      activo,
+      created_at
+    `)
+    .order("nombre", { ascending: true });
+
+  if (error) {
+    console.error("Error cargando clientes:", error);
+    toast("No se pudieron cargar los clientes");
+    return false;
+  }
+
+  DB.clientes = data || [];
+
+  return true;
+}
 function renderClientes(){
   const q=(document.getElementById("clientSearch")?.value||"").toLowerCase();
   const list = DB.clientes.filter(c =>
