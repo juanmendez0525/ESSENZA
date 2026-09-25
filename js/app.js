@@ -82,11 +82,31 @@ function renderView(view="inicio") {
 
 
   if (view === "clientes") {
-  cargarClientesDesdeSupabase().then(() => {
-    root.innerHTML = renderClientes();
+
+  Promise.resolve(
+    cargarClientesDesdeSupabase()
+  ).then(() => {
+
+    return renderClientes();
+
+  }).then(html => {
+
+    root.innerHTML = html;
+
+  }).catch(error => {
+
+    console.error("Error cargando clientes:", error);
+
+    root.innerHTML = `
+      <div class="empty-state">
+        No fue posible cargar los clientes.
+      </div>
+    `;
+
   });
+
   return;
-  }
+}
   
   if (view === "inventario") {
     cargarProductosDesdeSupabase().then(() => { 
