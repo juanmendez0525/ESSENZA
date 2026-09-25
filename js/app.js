@@ -25,11 +25,15 @@ function renderView(view="inicio") {
 
   const rol = window.perfilActual?.rol;
 
+  // Si todavía no conocemos el usuario,
+  // no cargamos ninguna vista.
   if (!rol) {
     console.warn("Usuario todavía no autenticado.");
     return;
   }
 
+  // El empleado solamente puede acceder a:
+  // inicio, ventas, inventario y apartados.
   const vistasEmpleado = [
     "inicio",
     "ventas",
@@ -43,6 +47,7 @@ function renderView(view="inicio") {
     view = "inicio";
   }
 
+  // "Más" solamente tiene sentido para móvil.
   if (view === "mas") {
 
     if (rol === "administrador") {
@@ -74,66 +79,26 @@ function renderView(view="inicio") {
     configuracion: renderConfiguracion
   };
 
-  // ==========================================
-  // CLIENTES
-  // ==========================================
-
-  if (view === "clientes") {
-
-    cargarClientesDesdeSupabase().then(() => {
-
-      root.innerHTML =
-        renderClientes();
-
-    });
-
-    return;
-  }
-
-  // ==========================================
-  // INVENTARIO
-  // ==========================================
-
   if (view === "inventario") {
-
-    cargarProductosDesdeSupabase().then(() => {
-
-      root.innerHTML =
-        renderInventario();
-
+    cargarProductosDesdeSupabase().then(() => { 
+      root.innerHTML = renderInventario();
     });
-
     return;
   }
-
-  // ==========================================
-  // VENTAS
-  // ==========================================
 
   if (view === "ventas") {
-
     cargarProductosDesdeSupabase().then(() => {
-
-      root.innerHTML =
-        renderVentas();
-
+      root.innerHTML = renderVentas();
     });
-
     return;
   }
-
-  // ==========================================
-  // RESTO DE VISTAS
-  // ==========================================
 
   Promise.resolve(
     renderers[view]
       ? renderers[view]()
       : renderInicio()
   ).then(html => {
-
     root.innerHTML = html;
-
   });
 }
 
