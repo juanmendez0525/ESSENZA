@@ -79,6 +79,8 @@ function renderView(view="inicio") {
     configuracion: renderConfiguracion
   };
 
+
+  
   if (view === "inventario") {
     cargarProductosDesdeSupabase().then(() => { 
       root.innerHTML = renderInventario();
