@@ -305,14 +305,200 @@ async function cargarClientesDesdeSupabase() {
 
   return true;
 }
-function renderClientes(){
-  const q=(document.getElementById("clientSearch")?.value||"").toLowerCase();
+async function renderClientes() {
+
+  const cargado = await cargarClientesDesdeSupabase();
+
+  if (!cargado) {
+    return `
+      <div class="empty-state">
+        No fue posible cargar los clientes.
+      </div>
+    `;
+  }
+
+  const q = (
+    document.getElementById("clientSearch")?.value || ""
+  ).toLowerCase();
+
   const list = DB.clientes.filter(c =>
-  `${c.nombre} ${c.identificacion} ${c.telefono} ${c.direccion}`
-    .toLowerCase()
-    .includes(q)
-);
-  return `<div class="hero"><div class="section-head"><div><h2>Clientes</h2><p>Consulta compras y pedidos de cada persona.</p></div><button class="primary-btn" onclick="openClientModal()">+ Nuevo cliente</button></div></div>
-  <div class="filters"><input id="clientSearch" oninput="renderView('clientes')" class="input search-box" placeholder="🔍 Buscar cliente..." value="${q}"></div>
-  <div class="product-grid">${list.map(c=>{const aps=DB.apartados.filter(a=>a.clienteId===c.id&&a.estado!=="Entregado");const spent=DB.ventas.filter(v=>v.cliente===c.nombre).reduce((s,v)=>s+v.total,0);return `<div class="card"><div class="row space"><div><h2>${c.nombre}</h2><div class="small">📞 ${c.telefono||"Sin teléfono"}</div></div><button class="secondary-btn" onclick="openClientModal('${c.id}')">Editar</button></div><div class="list mt"><div class="list-item"><span>Compras</span><b>${money(spent)}</b></div><div class="list-item"><span>Apartados activos</span><b>${aps.length}</b></div><div class="list-item"><span>Saldo</span><b>${money(aps.reduce((s,a)=>s+a.total-a.abonado,0))}</b></div></div></div>`}).join("")}</div>`;
+    `${c.nombre || ""} ${c.identificacion || ""} ${c.telefono || ""} ${c.direccion || ""}`
+      .toLowerCase()
+      .includes(q)
+  );
+
+  return `
+    <div class="hero">
+
+      <div class="section-head">
+
+        <div>
+          <h2>Clientes</h2>
+
+          <p>
+            Consulta compras y pedidos de cada persona.
+          </p>
+        </div>
+
+        <button
+          class="primary-btn"
+          onclick="openClientModal()"
+        >
+          + Nuevo cliente
+        </button>
+
+      </div>
+
+    </div>
+
+
+    <div class="filters">
+
+      <input
+        id="clientSearch"
+        oninput="renderView('clientes')"
+        class="input search-box"
+        placeholder="🔍 Buscar cliente..."
+        value="${q}"
+      >
+
+    </div>
+
+
+    <div class="product-grid">
+
+      ${
+        list.length
+
+          ? list.map(c => {
+
+              const aps =
+                DB.apartados.filter(
+                  a =>
+                    String(a.clienteId) === String(c.id) &&
+                    a.estado !== "Entregado"
+                );
+
+              const spent =
+                DB.ventas
+                  .filter(
+                    v =>
+                      v.cliente === c.nombre
+                  )
+                  .reduce(
+                    (s, v) =>
+                      s + Number(v.total || 0),
+                    0
+                  );
+
+              const saldo =
+                aps.reduce(
+                  (s, a) =>
+                    s +
+                    Number(a.total || 0) -
+                    Number(a.abonado || 0),
+                  0
+                );
+
+              return `
+
+                <div class="card">
+
+                  <div class="row space">
+
+                    <div>
+
+                      <h2>
+                        ${c.nombre}
+                      </h2>
+
+                      <div class="small">
+                        📞 ${c.telefono || "Sin teléfono"}
+                      </div>
+
+                      ${
+                        c.identificacion
+                          ? `
+                            <div class="small">
+                              🪪 ${c.identificacion}
+                            </div>
+                          `
+                          : ""
+                      }
+
+                    </div>
+
+                    <button
+                      class="secondary-btn"
+                      onclick="openClientModal('${c.id}')"
+                    >
+                      Editar
+                    </button>
+
+                  </div>
+
+
+                  <div class="list mt">
+
+                    <div class="list-item">
+
+                      <span>
+                        Compras
+                      </span>
+
+                      <b>
+                        ${money(spent)}
+                      </b>
+
+                    </div>
+
+
+                    <div class="list-item">
+
+                      <span>
+                        Apartados activos
+                      </span>
+
+                      <b>
+                        ${aps.length}
+                      </b>
+
+                    </div>
+
+
+                    <div class="list-item">
+
+                      <span>
+                        Saldo
+                      </span>
+
+                      <b>
+                        ${money(saldo)}
+                      </b>
+
+                    </div>
+
+                  </div>
+
+                </div>
+
+              `;
+
+            }).join("")
+
+          : `
+            <div class="empty-state">
+
+              ${
+                q
+                  ? "No se encontraron clientes con esa búsqueda."
+                  : "No hay clientes registrados."
+              }
+
+            </div>
+          `
+      }
+
+    </div>
+  `;
 }
