@@ -501,4 +501,32 @@ async function renderClientes() {
 
     </div>
   `;
+
+    // ==========================================
+  // RENDERIZAR VISTAS
+  // ==========================================
+
+  const renderer =
+    renderers[view] || renderInicio;
+
+  try {
+
+    const html = await renderer();
+
+    root.innerHTML = html;
+
+  } catch (error) {
+
+    console.error(
+      `Error renderizando la vista "${view}":`,
+      error
+    );
+
+    root.innerHTML = `
+      <div class="empty-state">
+        No fue posible cargar esta sección.
+      </div>
+    `;
+
+  }
 }
