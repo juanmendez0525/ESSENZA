@@ -76,7 +76,72 @@ function formatoFechaReporte(fecha) {
   });
 }
 
+async function registrarMovimientoDineroReporte() {
+  const tipo =
+    document.getElementById("reporteMovimientoTipo")?.value;
 
+  const categoria =
+    document.getElementById("reporteMovimientoCategoria")?.value || "Otros";
+
+  const concepto =
+    document.getElementById("reporteMovimientoConcepto")?.value.trim();
+
+  const valor = Number(
+    document.getElementById("reporteMovimientoValor")?.value
+  );
+
+  const fecha =
+    document.getElementById("reporteMovimientoFecha")?.value;
+
+  const descripcion =
+    document.getElementById("reporteMovimientoDescripcion")?.value.trim() || null;
+
+  if (!tipo) {
+    alert("Selecciona si es una entrada o una salida.");
+    return;
+  }
+
+  if (!valor || valor <= 0) {
+    alert("Ingresa un valor válido.");
+    return;
+  }
+
+  if (!fecha) {
+    alert("Selecciona la fecha.");
+    return;
+  }
+
+  if (!concepto) {
+    alert("Escribe el concepto del movimiento.");
+    return;
+  }
+
+  const { error } = await supabaseClient
+    .from("movimientos_dinero")
+    .insert([{
+      tipo,
+      categoria,
+      concepto,
+      valor,
+      fecha,
+      descripcion,
+      usuario_id: window.usuarioActual?.id || null
+    }]);
+
+  if (error) {
+    console.error("Error registrando movimiento:", error);
+    alert("No fue posible registrar el movimiento.");
+    return;
+  }
+
+  alert(
+    tipo === "salida"
+      ? "Salida de dinero registrada correctamente."
+      : "Entrada de dinero registrada correctamente."
+  );
+
+  renderView("reportes");
+}
 async function renderReportes() {
   const mesSeleccionado = obtenerMesActualReporte();
 
