@@ -149,6 +149,8 @@ async function renderReportes() {
 
   const ventas = Array.isArray(DB.ventas)
     ? DB.ventas
+    ? DB.ventas
+    ? DB.ventas
     : [];
 
   // ==========================================
