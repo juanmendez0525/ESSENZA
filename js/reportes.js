@@ -1,17 +1,3 @@
-async function cargarGastosDesdeSupabase() {
-  const { data, error } = await supabaseClient
-    .from("gastos")
-    .select("*")
-    .order("fecha", { ascending: false });
-
-  if (error) {
-    console.error("Error cargando gastos:", error);
-    return [];
-  }
-
-  return data || [];
-}
-
 async function cargarMovimientosDineroDesdeSupabase() {
   const { data, error } = await supabaseClient
     .from("movimientos_dinero")
