@@ -145,7 +145,8 @@ async function registrarMovimientoDineroReporte() {
 async function renderReportes() {
   const mesSeleccionado = obtenerMesActualReporte();
 
-  >
+  const gastos = await cargarGastosDesdeSupabase();
+  const movimientos = await cargarMovimientosDineroDesdeSupabase();
 
   const ventas = Array.isArray(DB.ventas)
     ? DB.ventas
