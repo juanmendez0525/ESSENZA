@@ -76,43 +76,52 @@ function formatoFechaReporte(fecha) {
   });
 }
 
-async function registrarGastoReporte() {
-  const concepto =
-    document.getElementById("reporteGastoConcepto")?.value.trim();
+async function registrarMovimientoDineroReporte() {
+  const tipo =
+    document.getElementById("reporteMovimientoTipo")?.value;
 
   const categoria =
-    document.getElementById("reporteGastoCategoria")?.value || "Otros";
+    document.getElementById("reporteMovimientoCategoria")?.value || "Otros";
+
+  const concepto =
+    document.getElementById("reporteMovimientoConcepto")?.value.trim();
 
   const valor = Number(
-    document.getElementById("reporteGastoValor")?.value
+    document.getElementById("reporteMovimientoValor")?.value
   );
 
   const fecha =
-    document.getElementById("reporteGastoFecha")?.value;
+    document.getElementById("reporteMovimientoFecha")?.value;
 
   const descripcion =
-    document.getElementById("reporteGastoDescripcion")?.value.trim() || null;
+    document.getElementById("reporteMovimientoDescripcion")?.value.trim() || null;
 
-  if (!concepto) {
-    alert("Escribe el concepto del gasto.");
+  if (!tipo) {
+    alert("Selecciona si es una entrada o una salida.");
     return;
   }
 
   if (!valor || valor <= 0) {
-    alert("Ingresa un valor válido para el gasto.");
+    alert("Ingresa un valor válido.");
     return;
   }
 
   if (!fecha) {
-    alert("Selecciona la fecha del gasto.");
+    alert("Selecciona la fecha.");
+    return;
+  }
+
+  if (!concepto) {
+    alert("Escribe el concepto del movimiento.");
     return;
   }
 
   const { error } = await supabaseClient
-    .from("gastos")
+    .from("movimientos_dinero")
     .insert([{
-      concepto,
+      tipo,
       categoria,
+      concepto,
       valor,
       fecha,
       descripcion,
@@ -120,12 +129,16 @@ async function registrarGastoReporte() {
     }]);
 
   if (error) {
-    console.error("Error registrando gasto:", error);
-    alert("No fue posible registrar el gasto.");
+    console.error("Error registrando movimiento:", error);
+    alert("No fue posible registrar el movimiento.");
     return;
   }
 
-  alert("Gasto registrado correctamente.");
+  alert(
+    tipo === "salida"
+      ? "Salida de dinero registrada correctamente."
+      : "Entrada de dinero registrada correctamente."
+  );
 
   renderView("reportes");
 }
