@@ -45,9 +45,20 @@ function DeFechaReporte(fecha) {
   ).padStart(2, "0")}`;
 }
 
-function nombreReporte() {
-  const [anio, numero] = .split("-");
+function nombreReporte(mes) {
+  const [anio, numero] = mes.split("-");
 
+  const fecha = new Date(
+    Number(anio),
+    Number(numero) - 1,
+    1
+  );
+
+  return fecha.toLocaleDateString("es-CO", {
+    month: "long",
+    year: "numeric"
+  });
+}
   const fecha = new Date(
     Number(anio),
     Number(numero) - 1,
