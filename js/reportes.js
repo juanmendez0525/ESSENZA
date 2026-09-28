@@ -277,11 +277,8 @@ async function renderReportes() {
     0
   );
 
-  const gananciaFinal =
-    gananciaBruta
-    - totalGastos
-    - retirosMes
-    + devolucionesMes;
+  
+
 
   // ==========================================
   // MOVIMIENTOS DE DINERO
@@ -306,6 +303,12 @@ async function renderReportes() {
         total + Number(m.valor || 0),
       0
     );
+
+  const gananciaFinal =
+  gananciaBruta
+  - totalGastos
+  - retirosMes
+  + devolucionesMes;
 
   // El saldo pendiente se calcula con TODOS los movimientos,
   // porque alguien puede retirar en un mes y devolver en otro.
@@ -417,89 +420,264 @@ async function renderReportes() {
 
       </div>
 
-      <!-- GASTOS -->
+      <!-- MOVIMIENTOS DEL NEGOCIO -->
       <div class="card mt">
 
         <div class="section-head">
           <div>
-            <h3>Registrar gasto</h3>
+            <h3>Movimientos del negocio</h3>
             <p class="muted">
-              Registra los gastos correspondientes al negocio.
+              Registra los gastos del negocio y el dinero que retires o devuelvas.
             </p>
           </div>
         </div>
 
+
+        <!-- ==========================================
+             REGISTRAR GASTO
+             ========================================== -->
+
         <div style="
-          display:grid;
-          grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
-          gap:12px;
-          margin-top:15px;
+          margin-top:20px;
+          padding:18px;
+          background:var(--soft);
+          border:1px solid var(--border);
+          border-radius:14px;
         ">
 
-          <div>
-            <label>Concepto</label>
-            <input
-              id="reporteGastoConcepto"
-              type="text"
-              placeholder="Ej. Pago de luz"
-            >
+          <div style="margin-bottom:15px;">
+            <h4 style="margin:0 0 5px;">
+              Registrar gasto
+            </h4>
+
+            <p class="muted" style="margin:0;">
+              Registra los gastos correspondientes al negocio.
+            </p>
           </div>
 
-          <div>
-            <label>Categoría</label>
-            <select id="reporteGastoCategoria">
-              <option value="Arriendo">Arriendo</option>
-              <option value="Servicios">Servicios</option>
-              <option value="Transporte">Transporte</option>
-              <option value="Publicidad">Publicidad</option>
-              <option value="Compras">Compras</option>
-              <option value="Nómina">Nómina</option>
-              <option value="Otros" selected>Otros</option>
-            </select>
+          <div style="
+            display:grid;
+            grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+            gap:12px;
+          ">
+
+            <div>
+              <label>Concepto</label>
+
+              <input
+                id="reporteGastoConcepto"
+                type="text"
+                placeholder="Ej. Pago de luz"
+              >
+            </div>
+
+
+            <div>
+              <label>Categoría</label>
+
+              <select id="reporteGastoCategoria">
+                <option value="Arriendo">Arriendo</option>
+                <option value="Servicios">Servicios</option>
+                <option value="Transporte">Transporte</option>
+                <option value="Publicidad">Publicidad</option>
+                <option value="Compras">Compras</option>
+                <option value="Nómina">Nómina</option>
+                <option value="Otros" selected>Otros</option>
+              </select>
+            </div>
+
+
+            <div>
+              <label>Valor</label>
+
+              <input
+                id="reporteGastoValor"
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="0"
+              >
+            </div>
+
+
+            <div>
+              <label>Fecha</label>
+
+              <input
+                id="reporteGastoFecha"
+                type="date"
+                value="${mesSeleccionado}-01"
+              >
+            </div>
+
+
+            <div style="grid-column:1/-1;">
+              <label>Descripción</label>
+
+              <input
+                id="reporteGastoDescripcion"
+                type="text"
+                placeholder="Descripción opcional"
+              >
+            </div>
+
           </div>
 
-          <div>
-            <label>Valor</label>
-            <input
-              id="reporteGastoValor"
-              type="number"
-              min="0"
-              step="0.01"
-              placeholder="0"
-            >
-          </div>
 
-          <div>
-            <label>Fecha</label>
-            <input
-              id="reporteGastoFecha"
-              type="date"
-              value="${mesSeleccionado}-01"
-            >
-          </div>
-
-          <div style="grid-column:1/-1;">
-            <label>Descripción</label>
-            <input
-              id="reporteGastoDescripcion"
-              type="text"
-              placeholder="Descripción opcional"
-            >
-          </div>
+          <button
+            class="btn btn-primary"
+            style="margin-top:15px;"
+            onclick="registrarGastoReporte()"
+          >
+            Registrar gasto
+          </button>
 
         </div>
 
-        <button
-          class="btn btn-primary"
-          style="margin-top:15px;"
-          onclick="registrarGastoReporte()"
-        >
-          Registrar gasto
-        </button>
+
+        <!-- ==========================================
+             DINERO PRESTADO
+             ========================================== -->
+
+        <div style="
+          margin-top:20px;
+          padding:18px;
+          background:var(--soft);
+          border:1px solid var(--border);
+          border-radius:14px;
+        ">
+
+          <div style="margin-bottom:15px;">
+            <h4 style="margin:0 0 5px;">
+              Dinero prestado por el negocio
+            </h4>
+
+            <p class="muted" style="margin:0;">
+              Registra cuando retires dinero del negocio y cuando lo devuelvas.
+            </p>
+          </div>
+
+
+          <!-- RESUMEN DE DINERO -->
+
+          <div
+            class="stats-grid"
+            style="margin-top:15px;"
+          >
+
+            <div class="stat-card">
+              <div class="stat-label">
+                Retirado este mes
+              </div>
+
+              <div class="stat-value">
+                ${money(retirosMes)}
+              </div>
+            </div>
+
+
+            <div class="stat-card">
+              <div class="stat-label">
+                Devuelto este mes
+              </div>
+
+              <div class="stat-value">
+                ${money(devolucionesMes)}
+              </div>
+            </div>
+
+
+            <div class="stat-card">
+              <div class="stat-label">
+                Pendiente por devolver
+              </div>
+
+              <div class="stat-value">
+                ${money(Math.max(0, saldoPendiente))}
+              </div>
+            </div>
+
+          </div>
+
+
+          <!-- FORMULARIO DE MOVIMIENTO -->
+
+          <div style="
+            display:grid;
+            grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+            gap:12px;
+            margin-top:20px;
+          ">
+
+            <div>
+              <label>Movimiento</label>
+
+              <select id="reporteMovimientoTipo">
+                <option value="retiro">
+                  Saqué dinero
+                </option>
+
+                <option value="devolucion">
+                  Devolví dinero
+                </option>
+              </select>
+            </div>
+
+
+            <div>
+              <label>Valor</label>
+
+              <input
+                id="reporteMovimientoValor"
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="0"
+              >
+            </div>
+
+
+            <div>
+              <label>Fecha</label>
+
+              <input
+                id="reporteMovimientoFecha"
+                type="date"
+                value="${mesSeleccionado}-01"
+              >
+            </div>
+
+
+            <div>
+              <label>Concepto</label>
+
+              <input
+                id="reporteMovimientoConcepto"
+                type="text"
+                placeholder="Ej. Dinero personal"
+              >
+            </div>
+
+          </div>
+
+
+          <button
+            class="btn btn-primary"
+            style="margin-top:15px;"
+            onclick="registrarMovimientoDineroReporte()"
+          >
+            Registrar movimiento
+          </button>
+
+        </div>
 
       </div>
 
-      <!-- LISTA DE GASTOS -->
+
+      <!-- ==========================================
+           LISTA DE GASTOS
+           ========================================== -->
+
       <div class="card mt">
 
         <div class="section-head">
@@ -524,23 +702,31 @@ async function renderReportes() {
                     gap:15px;
                   "
                 >
+
                   <div>
-                    <strong>${gasto.concepto || "Sin concepto"}</strong>
+
+                    <strong>
+                      ${gasto.concepto || "Sin concepto"}
+                    </strong>
+
                     <div class="muted">
                       ${gasto.categoria || "Otros"}
                       ·
                       ${formatoFechaReporte(gasto.fecha)}
                     </div>
+
                     ${
                       gasto.descripcion
                         ? `<div class="muted">${gasto.descripcion}</div>`
                         : ""
                     }
+
                   </div>
 
                   <strong>
                     ${money(gasto.valor)}
                   </strong>
+
                 </div>
               `).join("")
             : `
@@ -549,110 +735,6 @@ async function renderReportes() {
               </div>
             `
         }
-
-      </div>
-
-      <!-- DINERO PRESTADO -->
-      <div class="card mt">
-
-        <div class="section-head">
-          <div>
-            <h3>Dinero prestado por el negocio</h3>
-            <p class="muted">
-              Registra cuando retires dinero del negocio
-              y cuando lo devuelvas.
-            </p>
-          </div>
-        </div>
-
-        <div class="stats-grid" style="margin-top:15px;">
-
-          <div class="stat-card">
-            <div class="stat-label">
-              Retirado este mes
-            </div>
-            <div class="stat-value">
-              ${money(retirosMes)}
-            </div>
-          </div>
-
-          <div class="stat-card">
-            <div class="stat-label">
-              Devuelto este mes
-            </div>
-            <div class="stat-value">
-              ${money(devolucionesMes)}
-            </div>
-          </div>
-
-          <div class="stat-card">
-            <div class="stat-label">
-              Pendiente por devolver
-            </div>
-            <div class="stat-value">
-              ${money(Math.max(0, saldoPendiente))}
-            </div>
-          </div>
-
-        </div>
-
-        <div style="
-          display:grid;
-          grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
-          gap:12px;
-          margin-top:20px;
-        ">
-
-          <div>
-            <label>Movimiento</label>
-            <select id="reporteMovimientoTipo">
-              <option value="retiro">
-                Saqué dinero
-              </option>
-              <option value="devolucion">
-                Devolví dinero
-              </option>
-            </select>
-          </div>
-
-          <div>
-            <label>Valor</label>
-            <input
-              id="reporteMovimientoValor"
-              type="number"
-              min="0"
-              step="0.01"
-              placeholder="0"
-            >
-          </div>
-
-          <div>
-            <label>Fecha</label>
-            <input
-              id="reporteMovimientoFecha"
-              type="date"
-              value="${mesSeleccionado}-01"
-            >
-          </div>
-
-          <div>
-            <label>Concepto</label>
-            <input
-              id="reporteMovimientoConcepto"
-              type="text"
-              placeholder="Ej. Dinero personal"
-            >
-          </div>
-
-        </div>
-
-        <button
-          class="btn btn-primary"
-          style="margin-top:15px;"
-          onclick="registrarMovimientoDineroReporte()"
-        >
-          Registrar movimiento
-        </button>
 
       </div>
 

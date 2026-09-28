@@ -651,7 +651,6 @@ function renderConfiguracion(){
 
   `;
 }
-function resetDemo(){if(confirm("¿Restablecer todos los datos de demostración?")){localStorage.removeItem("makeupAppData");DB=loadData();cart=[];renderView("inicio");toast("Datos restaurados")}}
 async function cerrarSesion() {
 
     const confirmar = confirm(
