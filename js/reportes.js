@@ -12,9 +12,9 @@ async function cargarMovimientosDineroDesdeSupabase() {
   return data || [];
 }
 
-function obtenerMesActualReporte() {
-  if (window.mesReporteSeleccionado) {
-    return window.mesReporteSeleccionado;
+function obtenerActualReporte() {
+  if (window.ReporteSeleccionado) {
+    return window.ReporteSeleccionado;
   }
 
   const ahora = new Date();
@@ -24,7 +24,7 @@ function obtenerMesActualReporte() {
   ).padStart(2, "0")}`;
 }
 
-function mesDeFechaReporte(fecha) {
+function DeFechaReporte(fecha) {
   if (!fecha) return "";
 
   const texto = String(fecha);
@@ -45,12 +45,12 @@ function mesDeFechaReporte(fecha) {
   ).padStart(2, "0")}`;
 }
 
-function nombreMesReporte(mes) {
-  const [anio, numeroMes] = mes.split("-");
+function nombreReporte() {
+  const [anio, numero] = .split("-");
 
   const fecha = new Date(
     Number(anio),
-    Number(numeroMes) - 1,
+    Number(numero) - 1,
     1
   );
 
@@ -143,7 +143,7 @@ async function registrarMovimientoDineroReporte() {
   renderView("reportes");
 }
 async function renderReportes() {
-  const mesSeleccionado = obtenerMesActualReporte();
+  const Seleccionado = obtenerActualReporte();
 
   const gastos = await cargarGastosDesdeSupabase();
   const movimientos = await cargarMovimientosDineroDesdeSupabase();
@@ -153,10 +153,10 @@ async function renderReportes() {
     : [];
 
   // ==========================================
-  // VENTAS DEL MES
+  // VENTAS DEL 
   // ==========================================
 
-  const ventasDelMes = ventas.filter(v => {
+  const ventasDel = ventas.filter(v => {
     if (
       v.estado === "anulada" ||
       v.estado === "anulado" ||
@@ -166,13 +166,13 @@ async function renderReportes() {
       return false;
     }
 
-    return mesDeFechaReporte(v.fecha) === mesSeleccionado;
+    return DeFechaReporte(v.fecha) === Seleccionado;
   });
 
   let totalVentas = 0;
   let inversionMercancia = 0;
 
-  ventasDelMes.forEach(venta => {
+  ventasDel.forEach(venta => {
     totalVentas += Number(venta.total || 0);
 
     const items = Array.isArray(venta.items)
@@ -208,14 +208,14 @@ async function renderReportes() {
     totalVentas - inversionMercancia;
 
   // ==========================================
-  // GASTOS DEL MES
+  // GASTOS DEL 
   // ==========================================
 
-  const gastosDelMes = gastos.filter(g =>
-    mesDeFechaReporte(g.fecha) === mesSeleccionado
+  const gastosDel = gastos.filter(g =>
+    DeFechaReporte(g.fecha) === Seleccionado
   );
 
-  const totalGastos = gastosDelMes.reduce(
+  const totalGastos = gastosDel.reduce(
     (total, gasto) =>
       total + Number(gasto.valor || 0),
     0
@@ -228,11 +228,11 @@ async function renderReportes() {
   // MOVIMIENTOS DE DINERO
   // ==========================================
 
-  const movimientosDelMes = movimientos.filter(m =>
-    mesDeFechaReporte(m.fecha) === mesSeleccionado
+  const movimientosDel = movimientos.filter(m =>
+    DeFechaReporte(m.fecha) === Seleccionado
   );
 
-  const retirosMes = movimientosDelMes
+  const retiros = movimientosDel
     .filter(m => m.tipo === "retiro")
     .reduce(
       (total, m) =>
@@ -240,7 +240,7 @@ async function renderReportes() {
       0
     );
 
-  const devolucionesMes = movimientosDelMes
+  const devoluciones = movimientosDel
     .filter(m => m.tipo === "devolucion")
     .reduce(
       (total, m) =>
@@ -251,11 +251,11 @@ async function renderReportes() {
   const gananciaFinal =
   gananciaBruta
   - totalGastos
-  - retirosMes
-  + devolucionesMes;
+  - retiros
+  + devoluciones;
 
   // El saldo pendiente se calcula con TODOS los movimientos,
-  // porque alguien puede retirar en un mes y devolver en otro.
+  // porque alguien puede retirar en un  y devolver en otro.
   const retirosTotales = movimientos
     .filter(m => m.tipo === "retiro")
     .reduce(
@@ -282,21 +282,21 @@ async function renderReportes() {
   return `
     <div class="view-content">
 
-      <!-- SELECTOR DE MES -->
+      <!-- SELECTOR DE  -->
       <div class="card">
         <div class="section-head">
           <div>
             <h3>Reporte mensual</h3>
             <p class="muted">
-              ${nombreMesReporte(mesSeleccionado)}
+              ${nombreReporte(Seleccionado)}
             </p>
           </div>
 
           <input
             type="month"
-            value="${mesSeleccionado}"
+            value="${Seleccionado}"
             onchange="
-              window.mesReporteSeleccionado = this.value;
+              window.ReporteSeleccionado = this.value;
               renderView('reportes');
             "
             style="
@@ -313,7 +313,7 @@ async function renderReportes() {
 
         <div class="stat-card">
           <div class="stat-label">
-            Ventas del mes
+            Ventas del 
           </div>
           <div class="stat-value">
             ${money(totalVentas)}
@@ -343,7 +343,7 @@ async function renderReportes() {
 
         <div class="stat-card">
           <div class="stat-label">
-            Gastos del mes
+            Gastos del 
           </div>
           <div class="stat-value">
             ${money(totalGastos)}
@@ -450,7 +450,7 @@ async function renderReportes() {
               <input
                 id="reporteGastoFecha"
                 type="date"
-                value="${mesSeleccionado}-01"
+                value="${Seleccionado}-01"
               >
             </div>
 
@@ -511,22 +511,22 @@ async function renderReportes() {
 
             <div class="stat-card">
               <div class="stat-label">
-                Retirado este mes
+                Retirado este 
               </div>
 
               <div class="stat-value">
-                ${money(retirosMes)}
+                ${money(retiros)}
               </div>
             </div>
 
 
             <div class="stat-card">
               <div class="stat-label">
-                Devuelto este mes
+                Devuelto este 
               </div>
 
               <div class="stat-value">
-                ${money(devolucionesMes)}
+                ${money(devoluciones)}
               </div>
             </div>
 
@@ -587,7 +587,7 @@ async function renderReportes() {
               <input
                 id="reporteMovimientoFecha"
                 type="date"
-                value="${mesSeleccionado}-01"
+                value="${Seleccionado}-01"
               >
             </div>
 
@@ -626,7 +626,7 @@ async function renderReportes() {
 
         <div class="section-head">
           <div>
-            <h3>Gastos de ${nombreMesReporte(mesSeleccionado)}</h3>
+            <h3>Gastos de ${nombreReporte(Seleccionado)}</h3>
           </div>
 
           <strong>
@@ -635,8 +635,8 @@ async function renderReportes() {
         </div>
 
         ${
-          gastosDelMes.length
-            ? gastosDelMes.map(gasto => `
+          gastosDel.length
+            ? gastosDel.map(gasto => `
                 <div
                   class="list-item"
                   style="
@@ -675,7 +675,7 @@ async function renderReportes() {
               `).join("")
             : `
               <div class="empty">
-                No hay gastos registrados en este mes.
+                No hay gastos registrados en este .
               </div>
             `
         }
@@ -688,14 +688,14 @@ async function renderReportes() {
         <div class="section-head">
           <div>
             <h3>
-              Movimientos de dinero de ${nombreMesReporte(mesSeleccionado)}
+              Movimientos de dinero de ${nombreReporte(Seleccionado)}
             </h3>
           </div>
         </div>
 
         ${
-          movimientosDelMes.length
-            ? movimientosDelMes.map(mov => `
+          movimientosDel.length
+            ? movimientosDel.map(mov => `
                 <div
                   class="list-item"
                   style="
@@ -733,7 +733,7 @@ async function renderReportes() {
               `).join("")
             : `
               <div class="empty">
-                No hay movimientos de dinero registrados en este mes.
+                No hay movimientos de dinero registrados en este .
               </div>
             `
         }
