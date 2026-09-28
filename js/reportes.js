@@ -143,60 +143,6 @@ async function registrarMovimientoDineroReporte() {
   renderView("reportes");
 }
 
-async function registrarMovimientoDineroReporte() {
-  const tipo =
-    document.getElementById("reporteMovimientoTipo")?.value;
-
-  const valor = Number(
-    document.getElementById("reporteMovimientoValor")?.value
-  );
-
-  const fecha =
-    document.getElementById("reporteMovimientoFecha")?.value;
-
-  const concepto =
-    document.getElementById("reporteMovimientoConcepto")?.value.trim() || null;
-
-  if (!tipo) {
-    alert("Selecciona el tipo de movimiento.");
-    return;
-  }
-
-  if (!valor || valor <= 0) {
-    alert("Ingresa un valor válido.");
-    return;
-  }
-
-  if (!fecha) {
-    alert("Selecciona la fecha.");
-    return;
-  }
-
-  const { error } = await supabaseClient
-    .from("movimientos_dinero")
-    .insert([{
-      tipo,
-      valor,
-      fecha,
-      concepto,
-      usuario_id: window.usuarioActual?.id || null
-    }]);
-
-  if (error) {
-    console.error("Error registrando movimiento:", error);
-    alert("No fue posible registrar el movimiento.");
-    return;
-  }
-
-  alert(
-    tipo === "retiro"
-      ? "Retiro registrado correctamente."
-      : "Devolución registrada correctamente."
-  );
-
-  renderView("reportes");
-}
-
 async function renderReportes() {
   const mesSeleccionado = obtenerMesActualReporte();
 
