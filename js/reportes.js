@@ -11,7 +11,7 @@ async function cargarMovimientosDineroDesdeSupabase() {
 
   return data || [];
 }
-
+9
 function obtenerMesActualReporte() {
   if (window.mesReporteSeleccionado) {
     return window.mesReporteSeleccionado;
