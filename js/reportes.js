@@ -278,7 +278,10 @@ async function renderReportes() {
   );
 
   const gananciaFinal =
-    gananciaBruta - totalGastos;
+    gananciaBruta
+    - totalGastos
+    - retirosMes
+    + devolucionesMes;
 
   // ==========================================
   // MOVIMIENTOS DE DINERO
