@@ -1,3 +1,58 @@
+async function cargarAbonosDesdeSupabase() {
+  const { data, error } = await supabaseClient
+    .from("abonos")
+    .select("*")
+    .order("fecha", { ascending: false });
+
+  if (error) {
+    console.error("Error cargando abonos:", error);
+    return [];
+  }
+
+  return data || [];
+}
+
+async function cargarGastosDesdeSupabase() {
+  const { data, error } = await supabaseClient
+    .from("gastos")
+    .select("*")
+    .order("fecha", { ascending: false });
+
+  if (error) {
+    console.error("Error cargando gastos:", error);
+    return [];
+  }
+
+  return data || [];
+}
+
+async function cargarMovimientosDineroDesdeSupabase() {
+  const { data, error } = await supabaseClient
+    .from("movimientos_dinero")
+    .select("*")
+    .order("fecha", { ascending: false });
+
+  if (error) {
+    console.error("Error cargando movimientos de dinero:", error);
+    return [];
+  }
+
+  return data || [];
+}
+
+async function cargarMovimientosFinancierosDesdeSupabase() {
+  const { data, error } = await supabaseClient
+    .from("movimientos_financieros")
+    .select("*")
+    .order("fecha", { ascending: false });
+
+  if (error) {
+    console.error("Error cargando movimientos financieros:", error);
+    return [];
+  }
+
+  return data || [];
+}
 function renderReportes(){
   const ventas=DB.ventas, total=ventas.reduce((s,v)=>s+v.total,0), costos=ventas.reduce((s,v)=>s+v.items.reduce((a,i)=>a+(getProduct(i.productoId)?.precioCompra||0)*i.cantidad,0),0);
   const methods={};ventas.forEach(v=>methods[v.metodo]=(methods[v.metodo]||0)+v.total);
