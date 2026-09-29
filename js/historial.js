@@ -113,13 +113,20 @@ function renderTablaHistorial(ventas, mapaUsuarios = {}) {
                 </td>
 
                 <td>
-                  <button
-                    class="secondary-btn"
-                    onclick="verDetalleVenta('${venta.id}')"
-                  >
-                    Ver detalle
-                  </button>
-                </td>
+  <button
+    class="secondary-btn"
+    onclick="verDetalleVenta('${venta.id}')"
+  >
+    Ver detalle
+  </button>
+
+  <button
+    class="secondary-btn"
+    onclick="eliminarVenta('${venta.id}')"
+  >
+    🗑 Eliminar venta
+  </button>
+</td>
               </tr>
             `;
           }).join("")}
