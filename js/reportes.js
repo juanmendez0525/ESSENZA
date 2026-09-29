@@ -33,7 +33,24 @@ async function cargarVentasDesdeSupabase() {
 
   const { data, error } = await supabaseClient
     .from("ventas")
-    .select("*")
+    .select(`
+      id,
+      fecha,
+      subtotal,
+      descuento,
+      total,
+      estado,
+      venta_detalles (
+        id,
+        producto_id,
+        producto_nombre,
+        producto_marca,
+        cantidad,
+        precio_unitario,
+        precio_compra,
+        subtotal
+      )
+    `)
     .order("fecha", { ascending: false });
 
   if (error) {
@@ -46,9 +63,13 @@ async function cargarVentasDesdeSupabase() {
     return [];
   }
 
+  console.log(
+    "Ventas cargadas para Reportes:",
+    data
+  );
+
   return data || [];
 }
-
 
 // ==========================================
 // MES SELECCIONADO
