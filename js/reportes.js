@@ -316,6 +316,8 @@ async function renderReportes() {
   const ventas =
     await cargarVentasDesdeSupabase();
 
+  const detallesVentas = await cargarDetallesVentasDesdeSupabase();
+
 
   // ==========================================
   // VENTAS DEL MES
