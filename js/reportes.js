@@ -343,38 +343,26 @@ async function renderReportes() {
 
 
   let totalVentas = 0;
-
-  let inversionMercancia = 0;
-
-
-// ==========================================
-// CALCULAR VENTAS E INVERSIÓN
-// ==========================================
+let inversionMercancia = 0;
 
 ventasDelMes.forEach(venta => {
+  totalVentas += Number(venta.total || 0);
+});
 
-  totalVentas += Number(
-    venta.total || 0
-  );
+const idsVentasDelMes = new Set(
+  ventasDelMes.map(venta => venta.id)
+);
 
-  const detalles =
-    Array.isArray(venta.venta_detalles)
-      ? venta.venta_detalles
-      : [];
+detallesVentas.forEach(detalle => {
 
-  detalles.forEach(detalle => {
+  if (!idsVentasDelMes.has(detalle.venta_id)) {
+    return;
+  }
 
-    const cantidad =
-      Number(detalle.cantidad || 0);
+  const cantidad = Number(detalle.cantidad || 0);
+  const precioCompra = Number(detalle.precio_compra || 0);
 
-    const precioCompra =
-      Number(detalle.precio_compra || 0);
-
-    inversionMercancia +=
-      precioCompra * cantidad;
-
-  });
-
+  inversionMercancia += precioCompra * cantidad;
 });
 
 
