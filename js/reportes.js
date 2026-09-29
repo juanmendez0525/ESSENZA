@@ -52,6 +52,30 @@ async function cargarVentasDesdeSupabase() {
 
   return data || [];
 }
+async function cargarDetallesVentasDesdeSupabase() {
+
+  const { data, error } = await supabaseClient
+    .from("venta_detalles")
+    .select(`
+      id,
+      venta_id,
+      producto_id,
+      producto_nombre,
+      cantidad,
+      precio_unitario,
+      precio_compra,
+      subtotal
+    `);
+
+  if (error) {
+    console.error("Error cargando detalles de ventas:", error);
+    return [];
+  }
+
+  console.log("Detalles de ventas cargados:", data);
+
+  return data || [];
+}
 // ==========================================
 // MES SELECCIONADO
 // ==========================================
