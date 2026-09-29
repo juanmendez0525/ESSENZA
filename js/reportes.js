@@ -349,7 +349,6 @@ ventasDelMes.forEach(venta => {
 
 });
 
-  inversionMercancia = 10
 
 // ==========================================
 // GANANCIA BRUTA
