@@ -1,17 +1,3 @@
-async function cargarGastosDesdeSupabase() {
-  const { data, error } = await supabaseClient
-    .from("gastos")
-    .select("*")
-    .order("fecha", { ascending: false });
-
-  if (error) {
-    console.error("Error cargando gastos:", error);
-    return [];
-  }
-
-  return data || [];
-}
-
 async function cargarMovimientosDineroDesdeSupabase() {
   const { data, error } = await supabaseClient
     .from("movimientos_dinero")
@@ -26,9 +12,9 @@ async function cargarMovimientosDineroDesdeSupabase() {
   return data || [];
 }
 
-function obtenerMesActualReporte() {
-  if (window.mesReporteSeleccionado) {
-    return window.mesReporteSeleccionado;
+function obtenerActualReporte() {
+  if (window.ReporteSeleccionado) {
+    return window.ReporteSeleccionado;
   }
 
   const ahora = new Date();
@@ -38,7 +24,7 @@ function obtenerMesActualReporte() {
   ).padStart(2, "0")}`;
 }
 
-function mesDeFechaReporte(fecha) {
+function DeFechaReporte(fecha) {
   if (!fecha) return "";
 
   const texto = String(fecha);
@@ -59,12 +45,24 @@ function mesDeFechaReporte(fecha) {
   ).padStart(2, "0")}`;
 }
 
-function nombreMesReporte(mes) {
-  const [anio, numeroMes] = mes.split("-");
+function nombreReporte(mes) {
+  const [anio, numero] = mes.split("-");
 
   const fecha = new Date(
     Number(anio),
-    Number(numeroMes) - 1,
+    Number(numero) - 1,
+    1
+  );
+
+  return fecha.toLocaleDateString("es-CO", {
+    month: "long",
+    year: "numeric"
+  });
+}
+
+  const fecha = new Date(
+    Number(anio),
+    Number(numero) - 1,
     1
   );
 
@@ -90,63 +88,15 @@ function formatoFechaReporte(fecha) {
   });
 }
 
-async function registrarGastoReporte() {
-  const concepto =
-    document.getElementById("reporteGastoConcepto")?.value.trim();
-
-  const categoria =
-    document.getElementById("reporteGastoCategoria")?.value || "Otros";
-
-  const valor = Number(
-    document.getElementById("reporteGastoValor")?.value
-  );
-
-  const fecha =
-    document.getElementById("reporteGastoFecha")?.value;
-
-  const descripcion =
-    document.getElementById("reporteGastoDescripcion")?.value.trim() || null;
-
-  if (!concepto) {
-    alert("Escribe el concepto del gasto.");
-    return;
-  }
-
-  if (!valor || valor <= 0) {
-    alert("Ingresa un valor válido para el gasto.");
-    return;
-  }
-
-  if (!fecha) {
-    alert("Selecciona la fecha del gasto.");
-    return;
-  }
-
-  const { error } = await supabaseClient
-    .from("gastos")
-    .insert([{
-      concepto,
-      categoria,
-      valor,
-      fecha,
-      descripcion,
-      usuario_id: window.usuarioActual?.id || null
-    }]);
-
-  if (error) {
-    console.error("Error registrando gasto:", error);
-    alert("No fue posible registrar el gasto.");
-    return;
-  }
-
-  alert("Gasto registrado correctamente.");
-
-  renderView("reportes");
-}
-
 async function registrarMovimientoDineroReporte() {
   const tipo =
     document.getElementById("reporteMovimientoTipo")?.value;
+
+  const categoria =
+    document.getElementById("reporteMovimientoCategoria")?.value || "Otros";
+
+  const concepto =
+    document.getElementById("reporteMovimientoConcepto")?.value.trim();
 
   const valor = Number(
     document.getElementById("reporteMovimientoValor")?.value
@@ -155,11 +105,11 @@ async function registrarMovimientoDineroReporte() {
   const fecha =
     document.getElementById("reporteMovimientoFecha")?.value;
 
-  const concepto =
-    document.getElementById("reporteMovimientoConcepto")?.value.trim() || null;
+  const descripcion =
+    document.getElementById("reporteMovimientoDescripcion")?.value.trim() || null;
 
   if (!tipo) {
-    alert("Selecciona el tipo de movimiento.");
+    alert("Selecciona si es una entrada o una salida.");
     return;
   }
 
@@ -173,13 +123,20 @@ async function registrarMovimientoDineroReporte() {
     return;
   }
 
+  if (!concepto) {
+    alert("Escribe el concepto del movimiento.");
+    return;
+  }
+
   const { error } = await supabaseClient
     .from("movimientos_dinero")
     .insert([{
       tipo,
+      categoria,
+      concepto,
       valor,
       fecha,
-      concepto,
+      descripcion,
       usuario_id: window.usuarioActual?.id || null
     }]);
 
@@ -190,19 +147,18 @@ async function registrarMovimientoDineroReporte() {
   }
 
   alert(
-    tipo === "retiro"
-      ? "Retiro registrado correctamente."
-      : "Devolución registrada correctamente."
+    tipo === "salida"
+      ? "Salida de dinero registrada correctamente."
+      : "Entrada de dinero registrada correctamente."
   );
 
   renderView("reportes");
 }
-
 async function renderReportes() {
-  const mesSeleccionado = obtenerMesActualReporte();
+  const Seleccionado = obtenerActualReporte();
 
-  const gastos = await cargarGastosDesdeSupabase();
-  const movimientos = await cargarMovimientosDineroDesdeSupabase();
+  const movimientos =
+    await cargarMovimientosDineroDesdeSupabase();
 
   const ventas = Array.isArray(DB.ventas)
     ? DB.ventas
@@ -212,7 +168,7 @@ async function renderReportes() {
   // VENTAS DEL MES
   // ==========================================
 
-  const ventasDelMes = ventas.filter(v => {
+  const ventasDel = ventas.filter(v => {
     if (
       v.estado === "anulada" ||
       v.estado === "anulado" ||
@@ -222,13 +178,13 @@ async function renderReportes() {
       return false;
     }
 
-    return mesDeFechaReporte(v.fecha) === mesSeleccionado;
+    return DeFechaReporte(v.fecha) === Seleccionado;
   });
 
   let totalVentas = 0;
   let inversionMercancia = 0;
 
-  ventasDelMes.forEach(venta => {
+  ventasDel.forEach(venta => {
     totalVentas += Number(venta.total || 0);
 
     const items = Array.isArray(venta.items)
@@ -242,8 +198,6 @@ async function renderReportes() {
         item.precioCompra || 0
       );
 
-      // Si la venta no guardó el precio de compra,
-      // intentamos obtenerlo desde el producto actual.
       if (!precioCompra && item.productoId) {
         const producto = DB.productos?.find(
           p => p.id === item.productoId
@@ -256,80 +210,123 @@ async function renderReportes() {
         }
       }
 
-      inversionMercancia += precioCompra * cantidad;
+      inversionMercancia +=
+        precioCompra * cantidad;
     });
   });
 
   const gananciaBruta =
     totalVentas - inversionMercancia;
 
+
   // ==========================================
-  // GASTOS DEL MES
+  // MOVIMIENTOS DEL MES
   // ==========================================
 
-  const gastosDelMes = gastos.filter(g =>
-    mesDeFechaReporte(g.fecha) === mesSeleccionado
+  const movimientosDel = movimientos.filter(m =>
+    DeFechaReporte(m.fecha) === Seleccionado
   );
 
-  const totalGastos = gastosDelMes.reduce(
-    (total, gasto) =>
-      total + Number(gasto.valor || 0),
-    0
-  );
-
-  
-
 
   // ==========================================
-  // MOVIMIENTOS DE DINERO
+  // SALIDAS DEL MES
   // ==========================================
 
-  const movimientosDelMes = movimientos.filter(m =>
-    mesDeFechaReporte(m.fecha) === mesSeleccionado
-  );
-
-  const retirosMes = movimientosDelMes
-    .filter(m => m.tipo === "retiro")
+  const salidasMes = movimientosDel
+    .filter(m => m.tipo === "salida")
     .reduce(
       (total, m) =>
         total + Number(m.valor || 0),
       0
     );
 
-  const devolucionesMes = movimientosDelMes
-    .filter(m => m.tipo === "devolucion")
+
+  // ==========================================
+  // ENTRADAS DEL MES
+  // ==========================================
+
+  const entradasMes = movimientosDel
+    .filter(m => m.tipo === "entrada")
     .reduce(
       (total, m) =>
         total + Number(m.valor || 0),
       0
     );
+
+
+  // ==========================================
+  // GANANCIA FINAL
+  // ==========================================
 
   const gananciaFinal =
-  gananciaBruta
-  - totalGastos
-  - retirosMes
-  + devolucionesMes;
+    gananciaBruta
+    - salidasMes
+    + entradasMes;
 
-  // El saldo pendiente se calcula con TODOS los movimientos,
-  // porque alguien puede retirar en un mes y devolver en otro.
+
+  // ==========================================
+  // DINERO PERSONAL
+  // ==========================================
+
+  // Solo los movimientos de categoría
+  // "Dinero personal" afectan el saldo
+  // pendiente de devolver.
+
   const retirosTotales = movimientos
-    .filter(m => m.tipo === "retiro")
+    .filter(m =>
+      m.tipo === "salida" &&
+      m.categoria === "Dinero personal"
+    )
     .reduce(
       (total, m) =>
         total + Number(m.valor || 0),
       0
     );
+
 
   const devolucionesTotales = movimientos
-    .filter(m => m.tipo === "devolucion")
+    .filter(m =>
+      m.tipo === "entrada" &&
+      m.categoria === "Dinero personal"
+    )
     .reduce(
       (total, m) =>
         total + Number(m.valor || 0),
       0
     );
+
 
   const saldoPendiente =
     retirosTotales - devolucionesTotales;
+
+
+  // ==========================================
+  // DINERO PERSONAL DEL MES
+  // ==========================================
+
+  const retirosMes = movimientosDel
+    .filter(m =>
+      m.tipo === "salida" &&
+      m.categoria === "Dinero personal"
+    )
+    .reduce(
+      (total, m) =>
+        total + Number(m.valor || 0),
+      0
+    );
+
+
+  const devolucionesMes = movimientosDel
+    .filter(m =>
+      m.tipo === "entrada" &&
+      m.categoria === "Dinero personal"
+    )
+    .reduce(
+      (total, m) =>
+        total + Number(m.valor || 0),
+      0
+    );
+
 
   // ==========================================
   // HTML
@@ -340,19 +337,22 @@ async function renderReportes() {
 
       <!-- SELECTOR DE MES -->
       <div class="card">
+
         <div class="section-head">
+
           <div>
             <h3>Reporte mensual</h3>
+
             <p class="muted">
-              ${nombreMesReporte(mesSeleccionado)}
+              ${nombreReporte(Seleccionado)}
             </p>
           </div>
 
           <input
             type="month"
-            value="${mesSeleccionado}"
+            value="${Seleccionado}"
             onchange="
-              window.mesReporteSeleccionado = this.value;
+              window.ReporteSeleccionado = this.value;
               renderView('reportes');
             "
             style="
@@ -361,81 +361,130 @@ async function renderReportes() {
               border-radius:8px;
             "
           >
+
         </div>
+
       </div>
 
-      <!-- RESUMEN FINANCIERO -->
+
+      <!-- ==========================================
+           RESUMEN FINANCIERO
+           ========================================== -->
+
       <div class="stats-grid">
 
         <div class="stat-card">
+
           <div class="stat-label">
             Ventas del mes
           </div>
+
           <div class="stat-value">
             ${money(totalVentas)}
           </div>
+
         </div>
 
+
         <div class="stat-card">
+
           <div class="stat-label">
             Inversión en mercancía
           </div>
+
           <div class="stat-value">
             ${money(inversionMercancia)}
           </div>
+
           <div class="stat-extra">
             Costo de los productos vendidos
           </div>
+
         </div>
 
+
         <div class="stat-card">
+
           <div class="stat-label">
             Ganancia bruta
           </div>
+
           <div class="stat-value">
             ${money(gananciaBruta)}
           </div>
+
         </div>
 
+
         <div class="stat-card">
+
           <div class="stat-label">
-            Gastos del mes
+            Salidas del mes
           </div>
+
           <div class="stat-value">
-            ${money(totalGastos)}
+            ${money(salidasMes)}
           </div>
+
         </div>
 
+
         <div class="stat-card">
+
+          <div class="stat-label">
+            Entradas del mes
+          </div>
+
+          <div class="stat-value">
+            ${money(entradasMes)}
+          </div>
+
+        </div>
+
+
+        <div class="stat-card">
+
           <div class="stat-label">
             Ganancia final
           </div>
+
           <div class="stat-value">
             ${money(gananciaFinal)}
           </div>
+
           <div class="stat-extra">
-            Ganancia bruta menos gastos
+            Ganancia bruta - salidas + entradas
           </div>
+
         </div>
 
       </div>
 
-      <!-- MOVIMIENTOS DEL NEGOCIO -->
+
+      <!-- ==========================================
+           MOVIMIENTOS DEL NEGOCIO
+           ========================================== -->
+
       <div class="card mt">
 
         <div class="section-head">
+
           <div>
-            <h3>Movimientos del negocio</h3>
+
+            <h3>
+              Movimiento del negocio
+            </h3>
+
             <p class="muted">
-              Registra los gastos del negocio y el dinero que retires o devuelvas.
+              Registra cualquier entrada o salida de dinero.
             </p>
+
           </div>
+
         </div>
 
 
-        <!-- ==========================================
-             REGISTRAR GASTO
-             ========================================== -->
+        <!-- FORMULARIO ÚNICO -->
 
         <div style="
           margin-top:20px;
@@ -445,187 +494,108 @@ async function renderReportes() {
           border-radius:14px;
         ">
 
-          <div style="margin-bottom:15px;">
-            <h4 style="margin:0 0 5px;">
-              Registrar gasto
-            </h4>
-
-            <p class="muted" style="margin:0;">
-              Registra los gastos correspondientes al negocio.
-            </p>
-          </div>
-
           <div style="
             display:grid;
-            grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+            grid-template-columns:
+              repeat(auto-fit,minmax(180px,1fr));
             gap:12px;
           ">
 
-            <div>
-              <label>Concepto</label>
 
-              <input
-                id="reporteGastoConcepto"
-                type="text"
-                placeholder="Ej. Pago de luz"
-              >
-            </div>
-
+            <!-- TIPO -->
 
             <div>
-              <label>Categoría</label>
 
-              <select id="reporteGastoCategoria">
-                <option value="Arriendo">Arriendo</option>
-                <option value="Servicios">Servicios</option>
-                <option value="Transporte">Transporte</option>
-                <option value="Publicidad">Publicidad</option>
-                <option value="Compras">Compras</option>
-                <option value="Nómina">Nómina</option>
-                <option value="Otros" selected>Otros</option>
-              </select>
-            </div>
-
-
-            <div>
-              <label>Valor</label>
-
-              <input
-                id="reporteGastoValor"
-                type="number"
-                min="0"
-                step="0.01"
-                placeholder="0"
-              >
-            </div>
-
-
-            <div>
-              <label>Fecha</label>
-
-              <input
-                id="reporteGastoFecha"
-                type="date"
-                value="${mesSeleccionado}-01"
-              >
-            </div>
-
-
-            <div style="grid-column:1/-1;">
-              <label>Descripción</label>
-
-              <input
-                id="reporteGastoDescripcion"
-                type="text"
-                placeholder="Descripción opcional"
-              >
-            </div>
-
-          </div>
-
-
-          <button
-            class="btn btn-primary"
-            style="margin-top:15px;"
-            onclick="registrarGastoReporte()"
-          >
-            Registrar gasto
-          </button>
-
-        </div>
-
-
-        <!-- ==========================================
-             DINERO PRESTADO
-             ========================================== -->
-
-        <div style="
-          margin-top:20px;
-          padding:18px;
-          background:var(--soft);
-          border:1px solid var(--border);
-          border-radius:14px;
-        ">
-
-          <div style="margin-bottom:15px;">
-            <h4 style="margin:0 0 5px;">
-              Dinero prestado por el negocio
-            </h4>
-
-            <p class="muted" style="margin:0;">
-              Registra cuando retires dinero del negocio y cuando lo devuelvas.
-            </p>
-          </div>
-
-
-          <!-- RESUMEN DE DINERO -->
-
-          <div
-            class="stats-grid"
-            style="margin-top:15px;"
-          >
-
-            <div class="stat-card">
-              <div class="stat-label">
-                Retirado este mes
-              </div>
-
-              <div class="stat-value">
-                ${money(retirosMes)}
-              </div>
-            </div>
-
-
-            <div class="stat-card">
-              <div class="stat-label">
-                Devuelto este mes
-              </div>
-
-              <div class="stat-value">
-                ${money(devolucionesMes)}
-              </div>
-            </div>
-
-
-            <div class="stat-card">
-              <div class="stat-label">
-                Pendiente por devolver
-              </div>
-
-              <div class="stat-value">
-                ${money(Math.max(0, saldoPendiente))}
-              </div>
-            </div>
-
-          </div>
-
-
-          <!-- FORMULARIO DE MOVIMIENTO -->
-
-          <div style="
-            display:grid;
-            grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
-            gap:12px;
-            margin-top:20px;
-          ">
-
-            <div>
-              <label>Movimiento</label>
+              <label>
+                Tipo de movimiento
+              </label>
 
               <select id="reporteMovimientoTipo">
-                <option value="retiro">
-                  Saqué dinero
+
+                <option value="salida">
+                  Salida de dinero
                 </option>
 
-                <option value="devolucion">
-                  Devolví dinero
+                <option value="entrada">
+                  Entrada de dinero
                 </option>
+
               </select>
+
             </div>
 
 
+            <!-- CATEGORIA -->
+
             <div>
-              <label>Valor</label>
+
+              <label>
+                Categoría
+              </label>
+
+              <select id="reporteMovimientoCategoria">
+
+                <option value="Arriendo">
+                  Arriendo
+                </option>
+
+                <option value="Servicios">
+                  Servicios
+                </option>
+
+                <option value="Transporte">
+                  Transporte
+                </option>
+
+                <option value="Publicidad">
+                  Publicidad
+                </option>
+
+                <option value="Compras">
+                  Compras
+                </option>
+
+                <option value="Nómina">
+                  Nómina
+                </option>
+
+                <option value="Dinero personal">
+                  Dinero personal
+                </option>
+
+                <option value="Otros" selected>
+                  Otros
+                </option>
+
+              </select>
+
+            </div>
+
+
+            <!-- CONCEPTO -->
+
+            <div>
+
+              <label>
+                Concepto
+              </label>
+
+              <input
+                id="reporteMovimientoConcepto"
+                type="text"
+                placeholder="Ej. Pago de arriendo"
+              >
+
+            </div>
+
+
+            <!-- VALOR -->
+
+            <div>
+
+              <label>
+                Valor
+              </label>
 
               <input
                 id="reporteMovimientoValor"
@@ -634,28 +604,43 @@ async function renderReportes() {
                 step="0.01"
                 placeholder="0"
               >
+
             </div>
 
 
+            <!-- FECHA -->
+
             <div>
-              <label>Fecha</label>
+
+              <label>
+                Fecha
+              </label>
 
               <input
                 id="reporteMovimientoFecha"
                 type="date"
-                value="${mesSeleccionado}-01"
+                value="${Seleccionado}-01"
               >
+
             </div>
 
 
-            <div>
-              <label>Concepto</label>
+            <!-- DESCRIPCIÓN -->
+
+            <div style="
+              grid-column:1/-1;
+            ">
+
+              <label>
+                Descripción
+              </label>
 
               <input
-                id="reporteMovimientoConcepto"
+                id="reporteMovimientoDescripcion"
                 type="text"
-                placeholder="Ej. Dinero personal"
+                placeholder="Detalle opcional del movimiento"
               >
+
             </div>
 
           </div>
@@ -671,28 +656,101 @@ async function renderReportes() {
 
         </div>
 
+
+        <!-- ==========================================
+             RESUMEN DINERO PERSONAL
+             ========================================== -->
+
+        <div style="
+          margin-top:20px;
+          padding:18px;
+          background:var(--soft);
+          border:1px solid var(--border);
+          border-radius:14px;
+        ">
+
+          <h4 style="margin:0 0 15px;">
+            Dinero personal
+          </h4>
+
+          <div
+            class="stats-grid"
+            style="margin-top:15px;"
+          >
+
+            <div class="stat-card">
+
+              <div class="stat-label">
+                Retirado este mes
+              </div>
+
+              <div class="stat-value">
+                ${money(retirosMes)}
+              </div>
+
+            </div>
+
+
+            <div class="stat-card">
+
+              <div class="stat-label">
+                Devuelto este mes
+              </div>
+
+              <div class="stat-value">
+                ${money(devolucionesMes)}
+              </div>
+
+            </div>
+
+
+            <div class="stat-card">
+
+              <div class="stat-label">
+                Pendiente por devolver
+              </div>
+
+              <div class="stat-value">
+                ${money(Math.max(0, saldoPendiente))}
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+
       </div>
 
 
       <!-- ==========================================
-           LISTA DE GASTOS
+           HISTORIAL ÚNICO
            ========================================== -->
 
       <div class="card mt">
 
         <div class="section-head">
+
           <div>
-            <h3>Gastos de ${nombreMesReporte(mesSeleccionado)}</h3>
+
+            <h3>
+              Movimientos de ${nombreReporte(Seleccionado)}
+            </h3>
+
+            <p class="muted">
+              Entradas y salidas registradas durante el mes.
+            </p>
+
           </div>
 
-          <strong>
-            ${money(totalGastos)}
-          </strong>
         </div>
 
+
         ${
-          gastosDelMes.length
-            ? gastosDelMes.map(gasto => `
+          movimientosDel.length
+
+            ? movimientosDel.map(mov => `
+
                 <div
                   class="list-item"
                   style="
@@ -706,91 +764,77 @@ async function renderReportes() {
                   <div>
 
                     <strong>
-                      ${gasto.concepto || "Sin concepto"}
+
+                      ${
+                        mov.tipo === "salida"
+                          ? "Salida de dinero"
+                          : "Entrada de dinero"
+                      }
+
                     </strong>
 
+
                     <div class="muted">
-                      ${gasto.categoria || "Otros"}
+
+                      ${
+                        mov.categoria ||
+                        "Otros"
+                      }
+
                       ·
-                      ${formatoFechaReporte(gasto.fecha)}
+
+                      ${
+                        mov.concepto ||
+                        "Sin concepto"
+                      }
+
+                      ·
+
+                      ${
+                        formatoFechaReporte(
+                          mov.fecha
+                        )
+                      }
+
                     </div>
 
+
                     ${
-                      gasto.descripcion
-                        ? `<div class="muted">${gasto.descripcion}</div>`
+                      mov.descripcion
+                        ? `
+                          <div class="muted">
+                            ${mov.descripcion}
+                          </div>
+                        `
                         : ""
                     }
 
                   </div>
 
-                  <strong>
-                    ${money(gasto.valor)}
-                  </strong>
-
-                </div>
-              `).join("")
-            : `
-              <div class="empty">
-                No hay gastos registrados en este mes.
-              </div>
-            `
-        }
-
-      </div>
-
-      <!-- HISTORIAL DE MOVIMIENTOS -->
-      <div class="card mt">
-
-        <div class="section-head">
-          <div>
-            <h3>
-              Movimientos de dinero de ${nombreMesReporte(mesSeleccionado)}
-            </h3>
-          </div>
-        </div>
-
-        ${
-          movimientosDelMes.length
-            ? movimientosDelMes.map(mov => `
-                <div
-                  class="list-item"
-                  style="
-                    display:flex;
-                    justify-content:space-between;
-                    align-items:center;
-                    gap:15px;
-                  "
-                >
-
-                  <div>
-                    <strong>
-                      ${
-                        mov.tipo === "retiro"
-                          ? "Saqué dinero"
-                          : "Devolví dinero"
-                      }
-                    </strong>
-
-                    <div class="muted">
-                      ${formatoFechaReporte(mov.fecha)}
-                      ${
-                        mov.concepto
-                          ? ` · ${mov.concepto}`
-                          : ""
-                      }
-                    </div>
-                  </div>
 
                   <strong>
+
+                    ${
+                      mov.tipo === "salida"
+                        ? "-"
+                        : "+"
+                    }
+
                     ${money(mov.valor)}
+
                   </strong>
 
                 </div>
+
               `).join("")
+
             : `
+
               <div class="empty">
-                No hay movimientos de dinero registrados en este mes.
+                No hay movimientos registrados
+                en este mes.
               </div>
+
             `
         }
 
