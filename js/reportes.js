@@ -39,38 +39,19 @@ async function cargarVentasDesdeSupabase() {
       subtotal,
       descuento,
       total,
-      estado,
-      venta_detalles (
-        id,
-        producto_id,
-        producto_nombre,
-        producto_marca,
-        cantidad,
-        precio_unitario,
-        precio_compra,
-        subtotal
-      )
+      estado
     `)
     .order("fecha", { ascending: false });
 
   if (error) {
-
-    console.error(
-      "Error cargando ventas desde Supabase:",
-      error
-    );
-
+    console.error("Error cargando ventas desde Supabase:", error);
     return [];
   }
 
-  console.log(
-    "Ventas cargadas para Reportes:",
-    data
-  );
+  console.log("Ventas cargadas para Reportes:", data);
 
   return data || [];
 }
-
 // ==========================================
 // MES SELECCIONADO
 // ==========================================
