@@ -28,6 +28,25 @@ async function cargarMovimientosDineroDesdeSupabase() {
 
   return data || [];
 }
+async function cargarVentasDesdeSupabase() {
+
+  const { data, error } = await supabaseClient
+    .from("ventas")
+    .select("*")
+    .order("fecha", { ascending: false });
+
+  if (error) {
+
+    console.error(
+      "Error cargando ventas desde Supabase:",
+      error
+    );
+
+    return [];
+  }
+
+  return data || [];
+}
 
 
 // ==========================================
