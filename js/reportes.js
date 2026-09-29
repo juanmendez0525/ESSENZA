@@ -316,7 +316,7 @@ async function renderReportes() {
 
   let totalVentas = 0;
 
-  let inversionMercancia = 10;
+  let inversionMercancia = 0;
 
 
 // ==========================================
@@ -349,6 +349,7 @@ ventasDelMes.forEach(venta => {
 
 });
 
+  inversionMercancia = 10
 
 // ==========================================
 // GANANCIA BRUTA
