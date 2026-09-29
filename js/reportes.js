@@ -316,7 +316,7 @@ async function renderReportes() {
 
   let totalVentas = 0;
 
-  let inversionMercancia = 0;
+  let inversionMercancia = 10;
 
 
 // ==========================================
