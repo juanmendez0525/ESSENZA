@@ -1,4 +1,4 @@
-l/et apartadosSupabase = [];
+let apartadosSupabase = [];
 let detallesApartadosSupabase = [];
 
 function getClient(id){
