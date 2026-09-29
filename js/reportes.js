@@ -319,75 +319,44 @@ async function renderReportes() {
   let inversionMercancia = 0;
 
 
-  // ==========================================
-  // CALCULAR VENTAS E INVERSIÓN
-  // ==========================================
+// ==========================================
+// CALCULAR VENTAS E INVERSIÓN
+// ==========================================
 
-  ventasDelMes.forEach(venta => {
+ventasDelMes.forEach(venta => {
 
-    totalVentas += Number(
-      venta.total || 0
-    );
+  totalVentas += Number(
+    venta.total || 0
+  );
 
+  const detalles =
+    Array.isArray(venta.venta_detalles)
+      ? venta.venta_detalles
+      : [];
 
-    const items =
-      Array.isArray(venta.items)
-        ? venta.items
-        : [];
+  detalles.forEach(detalle => {
 
+    const cantidad =
+      Number(detalle.cantidad || 0);
 
-    items.forEach(item => {
+    const precioCompra =
+      Number(detalle.precio_compra || 0);
 
-      const cantidad =
-        Number(item.cantidad || 0);
-
-
-      let precioCompra =
-        Number(
-          item.precioCompra || 0
-        );
-
-
-      // Si la venta no guardó el precio
-      // de compra, buscamos el producto.
-
-      if (
-        !precioCompra &&
-        item.productoId
-      ) {
-
-        const producto =
-          DB.productos?.find(
-            p => p.id === item.productoId
-          );
-
-
-        if (producto) {
-
-          precioCompra =
-            Number(
-              producto.precioCompra || 0
-            );
-        }
-      }
-
-
-      inversionMercancia +=
-        precioCompra * cantidad;
-
-    });
+    inversionMercancia +=
+      precioCompra * cantidad;
 
   });
 
+});
 
-  // ==========================================
-  // GANANCIA BRUTA
-  // ==========================================
 
-  const gananciaBruta =
-    totalVentas -
-    inversionMercancia;
+// ==========================================
+// GANANCIA BRUTA
+// ==========================================
 
+const gananciaBruta =
+  totalVentas -
+  inversionMercancia;
 
   // ==========================================
   // MOVIMIENTOS DEL MES
