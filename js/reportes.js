@@ -9,6 +9,7 @@
 // CARGAR MOVIMIENTOS DE DINERO
 // ==========================================
 
+
 async function cargarMovimientosDineroDesdeSupabase() {
 
   const { data, error } = await supabaseClient
@@ -283,22 +284,11 @@ async function renderReportes() {
   const mesSeleccionado =
     obtenerMesActualReporte();
 
-
-  // ==========================================
-  // MOVIMIENTOS
-  // ==========================================
-
   const movimientos =
     await cargarMovimientosDineroDesdeSupabase();
 
-
-  // ==========================================
-  // VENTAS
-  // ==========================================
-
-  const ventas = Array.isArray(DB.ventas)
-    ? DB.ventas
-    : [];
+  const ventas =
+    await cargarVentasDesdeSupabase();
 
 
   // ==========================================
