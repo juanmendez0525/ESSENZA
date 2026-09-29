@@ -672,47 +672,20 @@ function finalizeSale(){
     // CREAR DETALLES
     // =========================
 
-    const detalles =
-      cart.map(item => {
+    const detalles = cart.map(item => {
+  const producto = getProduct(item.productoId);
 
-        const producto =
-          getProduct(
-            item.productoId
-          );
-
-        return {
-
-          venta_id:
-            ventaId,
-
-          producto_id:
-            producto?.id || null,
-
-          producto_nombre:
-            producto?.nombre ||
-            "Producto",
-
-          producto_marca:
-            producto?.marca ||
-            "",
-
-          cantidad:
-            Number(
-              item.cantidad
-            ),
-
-          precio_unitario:
-            Number(
-              item.precio
-            ),
-
-          subtotal:
-            Number(item.precio) *
-            Number(item.cantidad)
-
-        };
-
-      });
+  return {
+    venta_id: ventaId,
+    producto_id: producto?.id || null,
+    producto_nombre: producto?.nombre || "Producto",
+    producto_marca: producto?.marca || "",
+    cantidad: Number(item.cantidad),
+    precio_unitario: Number(item.precio),
+    precio_compra: Number(producto?.precioCompra || 0),
+    subtotal: Number(item.precio) * Number(item.cantidad)
+  };
+});
 
     const {
       error: errorDetalles
