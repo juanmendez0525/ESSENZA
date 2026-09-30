@@ -2908,10 +2908,120 @@ async function renderApartados() {
 
                           <td>
 
-                            <div
-                              class="row"
-                              style="gap:6px;flex-wrap:wrap"
-                            >
+                                <div
+                                  class="row"
+                                  style="gap:6px;flex-wrap:wrap;align-items:center"
+                                >
+                              
+                                  ${
+                                    estado.texto !== "Entregado"
+                                      ? `
+                                        <button
+                                          class="secondary-btn"
+                                          onclick="registerAbono('${a.id}')"
+                                        >
+                                          Abono
+                                        </button>
+                                      `
+                                      : ""
+                                  }
+                              
+                                  ${
+                                    estado.texto === "Pagado"
+                                      ? `
+                                        <button
+                                          class="primary-btn"
+                                          onclick="deliverApartado('${a.id}')"
+                                        >
+                                          Entregar
+                                        </button>
+                                      `
+                                      : ""
+                                  }
+                              
+                                  <div style="position:relative;display:inline-block">
+                              
+                                    <button
+                                      class="secondary-btn"
+                                      type="button"
+                                      onclick="toggleMenuApartado('${a.id}')"
+                                      title="Más opciones"
+                                    >
+                                      ⋮
+                                    </button>
+                              
+                                    <div
+                                      id="menuApartado-${a.id}"
+                                      style="
+                                        display:none;
+                                        position:absolute;
+                                        right:0;
+                                        top:100%;
+                                        z-index:100;
+                                        min-width:160px;
+                                        background:white;
+                                        border:1px solid #ddd;
+                                        border-radius:10px;
+                                        box-shadow:0 8px 20px rgba(0,0,0,.12);
+                                        padding:6px;
+                                      "
+                                    >
+                              
+                                      ${
+                                        esAdmin && estado.texto !== "Entregado"
+                                          ? `
+                                            <button
+                                              type="button"
+                                              class="secondary-btn"
+                                              style="width:100%;text-align:left;border:none;"
+                                              onclick="editarApartadoProductos('${a.id}');cerrarMenusApartados()"
+                                            >
+                                              ✏️ Editar
+                                            </button>
+                                          `
+                                          : ""
+                                      }
+                              
+                                      <button
+                                        type="button"
+                                        class="secondary-btn"
+                                        style="width:100%;text-align:left;border:none;"
+                                        onclick="verApartado('${a.id}');cerrarMenusApartados()"
+                                      >
+                                        📦 Ver pedido
+                                      </button>
+                              
+                                      <button
+                                        type="button"
+                                        class="secondary-btn"
+                                        style="width:100%;text-align:left;border:none;"
+                                        onclick="verAbonosApartado('${a.id}');cerrarMenusApartados()"
+                                      >
+                                        💰 Ver abonos
+                                      </button>
+                              
+                                      ${
+                                        esAdmin && estado.texto !== "Entregado"
+                                          ? `
+                                            <button
+                                              type="button"
+                                              class="secondary-btn"
+                                              style="width:100%;text-align:left;border:none;"
+                                              onclick="eliminarApartado('${a.id}');cerrarMenusApartados()"
+                                            >
+                                              🗑 Eliminar
+                                            </button>
+                                          `
+                                          : ""
+                                      }
+                              
+                                    </div>
+                              
+                                  </div>
+                              
+                                </div>
+                              
+                              </td>
 
                               <button
                                 class="secondary-btn"
