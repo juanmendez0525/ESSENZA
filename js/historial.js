@@ -190,6 +190,268 @@ async function eliminarVenta(ventaId) {
     "Contraseña correcta. La eliminación se realizará en el siguiente paso."
   );
 }
+async function eliminarVenta(ventaId) {
+
+  const usuario = window.usuarioActual;
+
+  if (!usuario?.email) {
+    alert("No se pudo identificar la cuenta actualmente iniciada.");
+    return;
+  }
+
+  // ==========================================
+  // 1. PEDIR CONTRASEÑA
+  // ==========================================
+
+  const password = prompt(
+    "🔐 Para eliminar esta venta, ingresa la contraseña de tu cuenta:"
+  );
+
+  if (password === null) {
+    return;
+  }
+
+  if (!password.trim()) {
+    alert("Debes ingresar la contraseña.");
+    return;
+  }
+
+
+  // ==========================================
+  // 2. VERIFICAR CONTRASEÑA
+  // ==========================================
+
+  const { error: errorLogin } =
+    await supabaseClient.auth.signInWithPassword({
+      email: usuario.email,
+      password: password
+    });
+
+  if (errorLogin) {
+
+    console.error(
+      "Error verificando contraseña:",
+      errorLogin
+    );
+
+    alert(
+      "Contraseña incorrecta. La venta no fue eliminada."
+    );
+
+    return;
+  }
+
+
+  // ==========================================
+  // 3. CONFIRMAR ELIMINACIÓN
+  // ==========================================
+
+  const confirmar = confirm(
+    "⚠️ La contraseña fue verificada correctamente.\n\n" +
+    "¿Estás seguro de que deseas eliminar esta venta?\n\n" +
+    "El stock de los productos será restaurado."
+  );
+
+  if (!confirmar) {
+    return;
+  }
+
+
+  // ==========================================
+  // 4. OBTENER DETALLES DE LA VENTA
+  // ==========================================
+
+  const {
+    data: detalles,
+    error: errorDetalles
+  } = await supabaseClient
+    .from("venta_detalles")
+    .select(`
+      producto_id,
+      cantidad
+    `)
+    .eq("venta_id", ventaId);
+
+
+  if (errorDetalles) {
+
+    console.error(
+      "Error obteniendo detalles de la venta:",
+      errorDetalles
+    );
+
+    alert(
+      "No se pudieron obtener los productos de la venta."
+    );
+
+    return;
+  }
+
+
+  // ==========================================
+  // 5. RESTAURAR STOCK
+  // ==========================================
+
+  for (const detalle of detalles || []) {
+
+    if (!detalle.producto_id) {
+      console.warn(
+        "Detalle sin producto asociado:",
+        detalle
+      );
+
+      continue;
+    }
+
+    const {
+      data: producto,
+      error: errorProducto
+    } = await supabaseClient
+      .from("productos")
+      .select("id, nombre, stock")
+      .eq("id", detalle.producto_id)
+      .single();
+
+
+    if (errorProducto || !producto) {
+
+      console.error(
+        "Error obteniendo producto:",
+        detalle.producto_id,
+        errorProducto
+      );
+
+      alert(
+        "No se pudo encontrar uno de los productos. " +
+        "La venta NO será eliminada para evitar inconsistencias."
+      );
+
+      return;
+    }
+
+
+    const nuevoStock =
+      Number(producto.stock || 0) +
+      Number(detalle.cantidad || 0);
+
+
+    const {
+      error: errorStock
+    } = await supabaseClient
+      .from("productos")
+      .update({
+        stock: nuevoStock
+      })
+      .eq("id", producto.id);
+
+
+    if (errorStock) {
+
+      console.error(
+        "Error restaurando stock:",
+        errorStock
+      );
+
+      alert(
+        "No se pudo restaurar el stock de uno de los productos.\n\n" +
+        "La venta NO será eliminada."
+      );
+
+      return;
+    }
+
+    // Actualizar copia local si existe
+    const productoLocal =
+      typeof getProduct === "function"
+        ? getProduct(producto.id)
+        : null;
+
+    if (productoLocal) {
+      productoLocal.stock = nuevoStock;
+    }
+  }
+
+
+  // ==========================================
+  // 6. ELIMINAR DETALLES DE LA VENTA
+  // ==========================================
+
+  const {
+    error: errorEliminarDetalles
+  } = await supabaseClient
+    .from("venta_detalles")
+    .delete()
+    .eq("venta_id", ventaId);
+
+
+  if (errorEliminarDetalles) {
+
+    console.error(
+      "Error eliminando detalles:",
+      errorEliminarDetalles
+    );
+
+    alert(
+      "El stock fue restaurado, pero no se pudieron eliminar los detalles de la venta."
+    );
+
+    return;
+  }
+
+
+  // ==========================================
+  // 7. ELIMINAR LA VENTA
+  // ==========================================
+
+  const {
+    error: errorEliminarVenta
+  } = await supabaseClient
+    .from("ventas")
+    .delete()
+    .eq("id", ventaId);
+
+
+  if (errorEliminarVenta) {
+
+    console.error(
+      "Error eliminando venta:",
+      errorEliminarVenta
+    );
+
+    alert(
+      "Los productos fueron restaurados, pero no se pudo eliminar la venta."
+    );
+
+    return;
+  }
+
+
+  // ==========================================
+  // 8. ACTUALIZAR LISTA LOCAL
+  // ==========================================
+
+  ventasHistorial =
+    ventasHistorial.filter(
+      venta => venta.id !== ventaId
+    );
+
+
+  // ==========================================
+  // 9. RECARGAR HISTORIAL
+  // ==========================================
+
+  await cargarHistorialVentas();
+
+
+  // ==========================================
+  // 10. MENSAJE FINAL
+  // ==========================================
+
+  alert(
+    "✅ Venta eliminada correctamente.\n\n" +
+    "El stock de los productos fue restaurado."
+  );
+}
 async function cargarHistorialVentas() {
   
   const contenedor = document.getElementById("historialVentas");
