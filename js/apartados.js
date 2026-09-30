@@ -3508,3 +3508,145 @@ function cerrarMenusApartados() {
       menu.style.display = "none";
     });
 }
+
+async function verAbonosApartado(id) {
+  try {
+    const { data: abonos, error } = await supabaseClient
+      .from("abonos")
+      .select(`
+        id,
+        apartado_id,
+        fecha,
+        monto,
+        metodo_pago,
+        notas,
+        created_at
+      `)
+      .eq("apartado_id", id)
+      .order("fecha", { ascending: false });
+
+    if (error) {
+      console.error("Error cargando abonos:", error);
+      toast("No se pudieron cargar los abonos");
+      return;
+    }
+
+    const apartado = apartadosSupabase.find(
+      a => String(a.id) === String(id)
+    );
+
+    if (!apartado) {
+      toast("Apartado no encontrado");
+      return;
+    }
+
+    const totalAbonado = (abonos || []).reduce(
+      (suma, abono) => suma + Number(abono.monto || 0),
+      0
+    );
+
+    const html = `
+      <div>
+        <div style="
+          display:grid;
+          grid-template-columns:repeat(2,1fr);
+          gap:12px;
+          margin-bottom:20px;
+        ">
+          <div class="card" style="padding:14px;">
+            <div style="font-size:13px;color:#666;">
+              Total del apartado
+            </div>
+            <strong style="font-size:20px;">
+              ${money(apartado.total)}
+            </strong>
+          </div>
+
+          <div class="card" style="padding:14px;">
+            <div style="font-size:13px;color:#666;">
+              Saldo pendiente
+            </div>
+            <strong style="font-size:20px;">
+              ${money(apartado.saldo)}
+            </strong>
+          </div>
+        </div>
+
+        <h3 style="margin-bottom:12px;">Historial de abonos</h3>
+
+        ${
+          abonos && abonos.length
+            ? `
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Fecha</th>
+                      <th>Monto</th>
+                      <th>Método de pago</th>
+                      <th>Notas</th>
+                    </tr>
+                  </thead>
+
+                  <tbody>
+                    ${abonos.map(abono => `
+                      <tr>
+                        <td>
+                          ${new Date(abono.fecha).toLocaleDateString("es-CO")}
+                        </td>
+
+                        <td>
+                          <strong>${money(abono.monto)}</strong>
+                        </td>
+
+                        <td>
+                          ${abono.metodo_pago || "—"}
+                        </td>
+
+                        <td>
+                          ${abono.notas || "—"}
+                        </td>
+                      </tr>
+                    `).join("")}
+                  </tbody>
+                </table>
+              </div>
+            `
+            : `
+              <div class="empty-state">
+                Este apartado todavía no tiene abonos registrados.
+              </div>
+            `
+        }
+
+        ${
+          abonos && abonos.length
+            ? `
+              <div style="
+                margin-top:16px;
+                padding-top:14px;
+                border-top:1px solid #eee;
+                display:flex;
+                justify-content:flex-end;
+              ">
+                <strong>
+                  Total abonado registrado:
+                  ${money(totalAbonado)}
+                </strong>
+              </div>
+            `
+            : ""
+        }
+      </div>
+    `;
+
+    openModal(
+      `Abonos del pedido #${String(id).slice(0, 8)}`,
+      html
+    );
+
+  } catch (error) {
+    console.error("Error inesperado viendo abonos:", error);
+    toast("No fue posible cargar los abonos");
+  }
+}
