@@ -276,17 +276,17 @@ async function registrarMovimientoDineroReporte() {
 
 
   if (error) {
+  console.error("ERROR COMPLETO REGISTRANDO MOVIMIENTO:", error);
 
-    console.error(
-      "Error registrando movimiento:",
-      error
-    );
+  alert(
+    "ERROR SUPABASE:\n\n" +
+    "Código: " + (error.code || "") + "\n\n" +
+    "Mensaje: " + (error.message || "") + "\n\n" +
+    "Detalles: " + (error.details || "") + "\n\n" +
+    "Hint: " + (error.hint || "")
+  );
 
-    alert(
-      "No fue posible registrar el movimiento."
-    );
-
-    return;
+  return;
   }
 
 
