@@ -3099,3 +3099,32 @@ async function renderApartados() {
     </div>
   `;
 }
+
+function toggleMenuApartado(id) {
+  const menu = document.getElementById(
+    `menuApartado-${id}`
+  );
+
+  if (!menu) return;
+
+  document
+    .querySelectorAll('[id^="menuApartado-"]')
+    .forEach(m => {
+      if (m !== menu) {
+        m.style.display = "none";
+      }
+    });
+
+  menu.style.display =
+    menu.style.display === "block"
+      ? "none"
+      : "block";
+}
+
+function cerrarMenusApartados() {
+  document
+    .querySelectorAll('[id^="menuApartado-"]')
+    .forEach(menu => {
+      menu.style.display = "none";
+    });
+}
