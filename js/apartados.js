@@ -3509,6 +3509,17 @@ function cerrarMenusApartados() {
     });
 }
 
+document.addEventListener("click", function(event) {
+  const dentroDeMenu = event.target.closest('[id^="menuApartado-"]');
+  const botonTresPuntos = event.target.closest(
+    'button[onclick^="toggleMenuApartado"]'
+  );
+
+  if (!dentroDeMenu && !botonTresPuntos) {
+    cerrarMenusApartados();
+  }
+});
+
 async function verAbonosApartado(id) {
   try {
     const { data: abonos, error } = await supabaseClient
