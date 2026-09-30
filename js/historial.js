@@ -418,6 +418,7 @@ async function cargarHistorialVentas() {
     .from("ventas")
     .select(`
       id,
+      cliente_id,
       fecha,
       subtotal,
       descuento,
@@ -454,6 +455,19 @@ async function cargarHistorialVentas() {
     return;
   }
 
+  const { data: clientesData, error: errorClientes } =
+  await supabaseClient
+    .from("clientes")
+    .select("id, nombre");
+
+if (errorClientes) {
+  console.error(
+    "Error cargando clientes para historial:",
+    errorClientes
+  );
+}
+
+window.clientesHistorial = clientesData || [];
   const usuarioIds = [
   ...new Set(
     ventas
@@ -561,7 +575,8 @@ function obtenerClienteVentaPorId(clienteId) {
     return "Consumidor final";
   }
 
-  const cliente = clientes.find(cliente => cliente.id === clienteId);
+  const cliente = (window.clientesHistorial || [])
+    .find(cliente => cliente.id === clienteId);
 
   if (!cliente) {
     return "Consumidor final";
@@ -569,7 +584,6 @@ function obtenerClienteVentaPorId(clienteId) {
 
   return cliente.nombre || "Consumidor final";
 }
-
 async function verDetalleVenta(ventaId) {
 
   const { data: venta, error: errorVenta } =
