@@ -2572,7 +2572,7 @@ if (valor > saldoActual) {
       .from("abonos")
       .insert({
         apartado_id: id,
-        valor: valor,
+        monto: valor,
         fecha: fecha,
         usuario_id: user.id
       });
