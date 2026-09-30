@@ -613,43 +613,45 @@ function finalizeSale(){
     // =========================
 
     const {
-      error: errorVenta
-    } =
-      await supabaseClient
-        .from("ventas")
-        .insert({
-          id: ventaId,
+  error: errorVenta
+} =
+  await supabaseClient
+    .from("ventas")
+    .insert({
+      id: ventaId,
 
-          fecha:
-            new Date().toISOString(),
+      fecha:
+        new Date().toISOString(),
 
-          subtotal:
-            subtotalVenta,
+      cliente_id:
+        clienteEncontrado
+          ? clienteEncontrado.id
+          : null,
 
-          descuento:
-            descuentoValido,
+      subtotal:
+        subtotalVenta,
 
-          total:
-            total,
+      descuento:
+        descuentoValido,
 
-          metodo_pago:
-            fd.get("metodo"),
+      total:
+        total,
 
-          estado:
-            "completada",
+      metodo_pago:
+        fd.get("metodo"),
 
-          notas:
-            clienteEncontrado
-              ? `Cliente: ${clienteEncontrado.nombre}`
-              : "Consumidor final",
+      estado:
+        "completada",
 
-          usuario_id:
-            user.id,
+      notas:
+        null,
 
-          descripcion_descuento:
-            descripcionDescuento || null
-        });
+      usuario_id:
+        user.id,
 
+      descripcion_descuento:
+        descripcionDescuento || null
+    });
     if(errorVenta){
 
       console.error(
