@@ -3043,9 +3043,19 @@ async function renderApartados() {
          TABLA
     ====================================== -->
 
-    <div class="card mt">
+    <div
+  class="card mt"
+  style="
+    min-height:520px;
+  "
+>
 
-      <div class="table-wrap">
+  <div
+    class="table-wrap"
+    style="
+      min-height:460px;
+    "
+  >
 
         <table>
 
