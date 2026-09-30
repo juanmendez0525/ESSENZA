@@ -3065,122 +3065,149 @@ async function renderApartados() {
                             </span>
                           </td>
 
-                          <td>
+                          <td style="position:relative;">
 
-                                <div
-                                  class="row"
-                                  style="gap:6px;flex-wrap:wrap;align-items:center"
-                                >
-                              
-                                  ${
-                                    estado.texto !== "Entregado"
-                                      ? `
-                                        <button
-                                          class="secondary-btn"
-                                          onclick="registerAbono('${a.id}')"
-                                        >
-                                          Abono
-                                        </button>
-                                      `
-                                      : ""
-                                  }
-                              
-                                  ${
-                                    estado.texto === "Pagado"
-                                      ? `
-                                        <button
-                                          class="primary-btn"
-                                          onclick="deliverApartado('${a.id}')"
-                                        >
-                                          Entregar
-                                        </button>
-                                      `
-                                      : ""
-                                  }
-                              
-                                  <div style="position:relative;display:inline-block">
-                              
-                                    <button
-                                      class="secondary-btn"
-                                      type="button"
-                                      onclick="toggleMenuApartado('${a.id}')"
-                                      title="Más opciones"
-                                    >
-                                      ⋮
-                                    </button>
-                              
-                                    <div
-                                      id="menuApartado-${a.id}"
-                                      style="
-                                        display:none;
-                                        position:absolute;
-                                        right:0;
-                                        top:100%;
-                                        z-index:100;
-                                        min-width:160px;
-                                        background:white;
-                                        border:1px solid #ddd;
-                                        border-radius:10px;
-                                        box-shadow:0 8px 20px rgba(0,0,0,.12);
-                                        padding:6px;
-                                      "
-                                    >
-                              
-                                      ${
-                                        esAdmin && estado.texto !== "Entregado"
-                                          ? `
-                                            <button
-                                              type="button"
-                                              class="secondary-btn"
-                                              style="width:100%;text-align:left;border:none;"
-                                              onclick="editarApartadoProductos('${a.id}');cerrarMenusApartados()"
-                                            >
-                                              ✏️ Editar
-                                            </button>
-                                          `
-                                          : ""
-                                      }
-                              
-                                      <button
-                                        type="button"
-                                        class="secondary-btn"
-                                        style="width:100%;text-align:left;border:none;"
-                                        onclick="verApartado('${a.id}');cerrarMenusApartados()"
-                                      >
-                                        📦 Ver pedido
-                                      </button>
-                              
-                                      <button
-                                        type="button"
-                                        class="secondary-btn"
-                                        style="width:100%;text-align:left;border:none;"
-                                        onclick="verAbonosApartado('${a.id}');cerrarMenusApartados()"
-                                      >
-                                        💰 Ver abonos
-                                      </button>
-                              
-                                      ${
-                                        esAdmin && estado.texto !== "Entregado"
-                                          ? `
-                                            <button
-                                              type="button"
-                                              class="secondary-btn"
-                                              style="width:100%;text-align:left;border:none;"
-                                              onclick="eliminarApartado('${a.id}');cerrarMenusApartados()"
-                                            >
-                                              🗑 Eliminar
-                                            </button>
-                                          `
-                                          : ""
-                                      }
-                              
-                                    </div>
-                              
-                                  </div>
-                              
-                                </div>
-                              
-                              </td>
+  <div
+    style="
+      display:flex;
+      align-items:center;
+      justify-content:flex-end;
+      gap:6px;
+      position:relative;
+    "
+  >
+
+    ${
+      estado.texto === "Pendiente"
+        ? `
+          <button
+            type="button"
+            class="secondary-btn"
+            onclick="registerAbono('${a.id}')"
+          >
+            Abono
+          </button>
+        `
+        : ""
+    }
+
+    ${
+      estado.texto === "Pagado"
+        ? `
+          <button
+            type="button"
+            class="primary-btn"
+            onclick="deliverApartado('${a.id}')"
+          >
+            Entregar
+          </button>
+        `
+        : ""
+    }
+
+    <button
+      type="button"
+      class="secondary-btn"
+      onclick="toggleMenuApartado('${a.id}')"
+      style="
+        min-width:38px;
+        padding:8px 10px;
+        font-size:18px;
+        line-height:1;
+      "
+      title="Más opciones"
+    >
+      ⋮
+    </button>
+
+    <div
+      id="menuApartado-${a.id}"
+      style="
+        display:none;
+        position:absolute;
+        right:0;
+        top:calc(100% + 4px);
+        min-width:170px;
+        background:var(--card);
+        border:1px solid var(--border);
+        border-radius:10px;
+        box-shadow:0 10px 25px rgba(0,0,0,.15);
+        padding:6px;
+        z-index:1000;
+      "
+    >
+
+      ${
+        esAdmin &&
+        estado.texto !== "Entregado"
+          ? `
+            <button
+              type="button"
+              class="secondary-btn"
+              onclick="cerrarMenusApartados(); editarApartadoProductos('${a.id}')"
+              style="
+                width:100%;
+                text-align:left;
+                margin-bottom:4px;
+              "
+            >
+              ✏️ Editar
+            </button>
+          `
+          : ""
+      }
+
+      <button
+        type="button"
+        class="secondary-btn"
+        onclick="cerrarMenusApartados(); verApartado('${a.id}')"
+        style="
+          width:100%;
+          text-align:left;
+          margin-bottom:4px;
+        "
+      >
+        👁 Ver pedido
+      </button>
+
+      <button
+        type="button"
+        class="secondary-btn"
+        onclick="cerrarMenusApartados(); verAbonosApartado('${a.id}')"
+        style="
+          width:100%;
+          text-align:left;
+          margin-bottom:4px;
+        "
+      >
+        💰 Ver abonos
+      </button>
+
+      ${
+        esAdmin &&
+        estado.texto !== "Entregado"
+          ? `
+            <button
+              type="button"
+              class="secondary-btn"
+              onclick="cerrarMenusApartados(); eliminarApartado('${a.id}')"
+              style="
+                width:100%;
+                text-align:left;
+                color:#b42318;
+              "
+            >
+              🗑 Eliminar
+            </button>
+          `
+          : ""
+      }
+
+    </div>
+
+  </div>
+
+</td>
 
                               <button
                                 class="secondary-btn"
@@ -3257,6 +3284,27 @@ async function renderApartados() {
 
     </div>
   `;
+}
+function toggleMenuApartado(id) {
+  const menu = document.getElementById(`menuApartado-${id}`);
+
+  if (!menu) return;
+
+  const estabaAbierto = menu.style.display === "block";
+
+  cerrarMenusApartados();
+
+  if (!estabaAbierto) {
+    menu.style.display = "block";
+  }
+}
+
+function cerrarMenusApartados() {
+  document
+    .querySelectorAll('[id^="menuApartado-"]')
+    .forEach(menu => {
+      menu.style.display = "none";
+    });
 }
 
 function toggleMenuApartado(id) {
