@@ -2451,15 +2451,16 @@ async function registerAbono(id) {
           </label>
 
           <input
-            class="input"
-            name="valor"
-            type="number"
-            min="1"
-            max="${saldo}"
-            step="0.01"
-            value="${saldo}"
-            required
-          >
+  type="number"
+  id="abonoValor"
+  class="input"
+  min="0.01"
+  max="${Number(apartado.saldo || 0)}"
+  step="0.01"
+  value=""
+  placeholder="Ingresa el valor del abono"
+  required
+>
 
         </div>
 
