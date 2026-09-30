@@ -2885,6 +2885,10 @@ async function renderApartados() {
 
   const apartados = apartadosSupabase;
 
+  // ==========================================
+  // ESTADO VISUAL
+  // ==========================================
+
   const getEstadoVisual = estado => {
     const valor = String(estado || "").toLowerCase();
 
@@ -2911,46 +2915,78 @@ async function renderApartados() {
     };
   };
 
+
+  // ==========================================
+  // ESTADÍSTICAS
+  // ==========================================
+
   const pendientes = apartados.filter(a => {
     const estado = String(a.estado || "").toLowerCase();
-    return estado === "activo" || estado === "pendiente";
+
+    return (
+      estado === "activo" ||
+      estado === "pendiente"
+    );
   });
 
   const pagados = apartados.filter(a => {
     const estado = String(a.estado || "").toLowerCase();
+
     return estado === "pagado";
   });
 
   const entregados = apartados.filter(a => {
     const estado = String(a.estado || "").toLowerCase();
+
     return estado === "entregado";
   });
 
   const saldoPendiente = apartados
     .filter(a => {
-      const estado = String(a.estado || "").toLowerCase();
+      const estado =
+        String(a.estado || "").toLowerCase();
+
       return estado !== "entregado";
     })
     .reduce(
-      (s, a) => s + Number(a.saldo || 0),
+      (s, a) =>
+        s + Number(a.saldo || 0),
       0
     );
 
+
+  // ==========================================
+  // HTML
+  // ==========================================
+
   return `
     <div class="hero">
+
       <div class="section-head">
+
         <div>
+
           <h2>Pedidos apartados</h2>
+
           <p>
             Controla abonos, saldos, productos y entregas.
           </p>
+
         </div>
+
       </div>
+
     </div>
+
+
+    <!-- =====================================
+         ESTADÍSTICAS
+    ====================================== -->
 
     <div class="stats-grid grid">
 
       <div class="card stat-card">
+
         <div class="stat-label">
           Pendiente
         </div>
@@ -2958,9 +2994,12 @@ async function renderApartados() {
         <div class="stat-value">
           ${pendientes.length}
         </div>
+
       </div>
 
+
       <div class="card stat-card">
+
         <div class="stat-label">
           Pagado
         </div>
@@ -2968,9 +3007,12 @@ async function renderApartados() {
         <div class="stat-value">
           ${pagados.length}
         </div>
+
       </div>
 
+
       <div class="card stat-card">
+
         <div class="stat-label">
           Entregado
         </div>
@@ -2978,9 +3020,12 @@ async function renderApartados() {
         <div class="stat-value">
           ${entregados.length}
         </div>
+
       </div>
 
+
       <div class="card stat-card">
+
         <div class="stat-label">
           Saldo pendiente
         </div>
@@ -2988,9 +3033,15 @@ async function renderApartados() {
         <div class="stat-value">
           ${money(saldoPendiente)}
         </div>
+
       </div>
 
     </div>
+
+
+    <!-- =====================================
+         TABLA
+    ====================================== -->
 
     <div class="card mt">
 
@@ -2999,22 +3050,51 @@ async function renderApartados() {
         <table>
 
           <thead>
+
             <tr>
-              <th>Pedido</th>
-              <th>Cliente</th>
-              <th>Fecha límite</th>
-              <th>Total</th>
-              <th>Abonado</th>
-              <th>Saldo</th>
-              <th>Estado</th>
-              <th>Acciones</th>
+
+              <th>
+                Pedido
+              </th>
+
+              <th>
+                Cliente
+              </th>
+
+              <th>
+                Fecha límite
+              </th>
+
+              <th>
+                Total
+              </th>
+
+              <th>
+                Abonado
+              </th>
+
+              <th>
+                Saldo
+              </th>
+
+              <th>
+                Estado
+              </th>
+
+              <th>
+                Acciones
+              </th>
+
             </tr>
+
           </thead>
+
 
           <tbody>
 
             ${
               apartados.length
+
                 ? apartados
                     .map(a => {
 
@@ -3024,126 +3104,119 @@ async function renderApartados() {
                       const estado =
                         getEstadoVisual(a.estado);
 
-                      const detalles =
-                        detallesApartadosSupabase.filter(
-                          d => d.apartado_id === a.id
-                        );
-
                       return `
                         <tr>
 
-                          <td>
-                            <b>#${String(a.id).slice(0, 8)}</b>
-                          </td>
+                          <!-- =========================
+                               PEDIDO
+                          ========================== -->
 
                           <td>
+
+                            <b>
+                              #${String(a.id).slice(0, 8)}
+                            </b>
+
+                          </td>
+
+
+                          <!-- =========================
+                               CLIENTE
+                          ========================== -->
+
+                          <td>
+
                             ${
                               cliente?.nombre ||
                               "Consumidor final"
                             }
+
                           </td>
 
-                          <td>
-                            ${a.fecha_limite || "—"}
-                          </td>
+
+                          <!-- =========================
+                               FECHA LÍMITE
+                          ========================== -->
 
                           <td>
+
+                            ${
+                              a.fecha_limite ||
+                              "—"
+                            }
+
+                          </td>
+
+
+                          <!-- =========================
+                               TOTAL
+                          ========================== -->
+
+                          <td>
+
                             ${money(a.total)}
+
                           </td>
 
+
+                          <!-- =========================
+                               ABONADO
+                          ========================== -->
+
                           <td>
+
                             ${money(a.total_abonado)}
+
                           </td>
 
+
+                          <!-- =========================
+                               SALDO
+                          ========================== -->
+
                           <td>
+
                             ${money(a.saldo)}
+
                           </td>
 
+
+                          <!-- =========================
+                               ESTADO
+                          ========================== -->
+
                           <td>
-                            <span class="badge ${estado.clase}">
+
+                            <span
+                              class="badge ${estado.clase}"
+                            >
                               ${estado.texto}
                             </span>
+
                           </td>
 
+
+                          <!-- =========================
+                               ACCIONES
+                          ========================== -->
+
                           <td>
-  <div
-    style="
-      display:flex;
-      align-items:center;
-      justify-content:flex-end;
-      gap:8px;
-      white-space:nowrap;
-    "
-  >
 
-    ${
-      estado.texto !== "Entregado"
-        ? `
-          <button
-            type="button"
-            class="secondary-btn"
-            onclick="registerAbono('${a.id}')"
-          >
-            Abono
-          </button>
-        `
-        : ""
-    }
-
-    ${
-      estado.texto === "Pagado"
-        ? `
-          <button
-            type="button"
-            class="primary-btn"
-            onclick="deliverApartado('${a.id}')"
-          >
-            Entregar
-          </button>
-        `
-        : ""
-    }
-
-    <button
-      type="button"
-      class="secondary-btn"
-      onclick="alert('ID: ${a.id}')"
-      style="
-        min-width:40px;
-        padding:8px 12px;
-        font-size:18px;
-      "
-    >
-      ⋮
-    </button>
-
-  </div>
-</td>
-                              <button
-                                class="secondary-btn"
-                                onclick="verApartado('${a.id}')"
-                              >
-                                Ver pedido
-                              </button>
+                            <div
+                              style="
+                                display:flex;
+                                align-items:center;
+                                justify-content:flex-end;
+                                gap:6px;
+                                white-space:nowrap;
+                              "
+                            >
 
                               ${
-                                esAdmin &&
                                 estado.texto !== "Entregado"
                                   ? `
                                     <button
-                                      class="secondary-btn"
-                                      onclick="editarApartadoProductos('${a.id}')"
-                                    >
-                                      ✏️ Editar
-                                    </button>
-                                  `
-                                  : ""
-                              }
-
-                              ${
-                                estado.texto === "Pendiente"
-                                  ? `
-                                    <button
+                                      type="button"
                                       class="secondary-btn"
                                       onclick="registerAbono('${a.id}')"
                                     >
@@ -3153,10 +3226,12 @@ async function renderApartados() {
                                   : ""
                               }
 
+
                               ${
                                 estado.texto === "Pagado"
                                   ? `
                                     <button
+                                      type="button"
                                       class="primary-btn"
                                       onclick="deliverApartado('${a.id}')"
                                     >
@@ -3166,22 +3241,182 @@ async function renderApartados() {
                                   : ""
                               }
 
+
+                              <!-- =====================
+                                   BOTÓN TRES PUNTOS
+                              ====================== -->
+
+                              <div
+                                style="
+                                  position:relative;
+                                  display:inline-block;
+                                "
+                              >
+
+                                <button
+                                  type="button"
+                                  class="secondary-btn"
+                                  onclick="toggleMenuApartado('${a.id}')"
+                                  title="Más opciones"
+                                  style="
+                                    min-width:38px;
+                                    width:38px;
+                                    height:38px;
+                                    padding:0;
+                                    display:flex;
+                                    align-items:center;
+                                    justify-content:center;
+                                    font-size:20px;
+                                    line-height:1;
+                                  "
+                                >
+                                  ⋮
+                                </button>
+
+
+                                <!-- =================
+                                     MENÚ
+                                ================== -->
+
+                                <div
+                                  id="menuApartado-${a.id}"
+                                  style="
+                                    display:none;
+                                    position:absolute;
+                                    right:0;
+                                    top:calc(100% + 5px);
+                                    width:180px;
+                                    background:white;
+                                    border:1px solid #ddd;
+                                    border-radius:10px;
+                                    box-shadow:0 8px 24px rgba(0,0,0,.15);
+                                    padding:6px;
+                                    z-index:9999;
+                                  "
+                                >
+
+                                  ${
+                                    esAdmin &&
+                                    estado.texto !== "Entregado"
+                                      ? `
+                                        <button
+                                          type="button"
+                                          onclick="
+                                            cerrarMenusApartados();
+                                            editarApartadoProductos('${a.id}');
+                                          "
+                                          style="
+                                            display:block;
+                                            width:100%;
+                                            border:0;
+                                            background:transparent;
+                                            padding:10px;
+                                            text-align:left;
+                                            cursor:pointer;
+                                            border-radius:7px;
+                                          "
+                                        >
+                                          ✏️ Editar
+                                        </button>
+                                      `
+                                      : ""
+                                  }
+
+
+                                  <button
+                                    type="button"
+                                    onclick="
+                                      cerrarMenusApartados();
+                                      verApartado('${a.id}');
+                                    "
+                                    style="
+                                      display:block;
+                                      width:100%;
+                                      border:0;
+                                      background:transparent;
+                                      padding:10px;
+                                      text-align:left;
+                                      cursor:pointer;
+                                      border-radius:7px;
+                                    "
+                                  >
+                                    👁 Ver pedido
+                                  </button>
+
+
+                                  <button
+                                    type="button"
+                                    onclick="
+                                      cerrarMenusApartados();
+                                      verAbonosApartado('${a.id}');
+                                    "
+                                    style="
+                                      display:block;
+                                      width:100%;
+                                      border:0;
+                                      background:transparent;
+                                      padding:10px;
+                                      text-align:left;
+                                      cursor:pointer;
+                                      border-radius:7px;
+                                    "
+                                  >
+                                    💰 Ver abonos
+                                  </button>
+
+
+                                  ${
+                                    esAdmin &&
+                                    estado.texto !== "Entregado"
+                                      ? `
+                                        <button
+                                          type="button"
+                                          onclick="
+                                            cerrarMenusApartados();
+                                            eliminarApartado('${a.id}');
+                                          "
+                                          style="
+                                            display:block;
+                                            width:100%;
+                                            border:0;
+                                            background:transparent;
+                                            padding:10px;
+                                            text-align:left;
+                                            cursor:pointer;
+                                            border-radius:7px;
+                                            color:#b42318;
+                                          "
+                                        >
+                                          🗑 Eliminar
+                                        </button>
+                                      `
+                                      : ""
+                                  }
+
+                                </div>
+
+                              </div>
+
                             </div>
 
                           </td>
 
                         </tr>
                       `;
+
                     })
                     .join("")
+
                 : `
                   <tr>
+
                     <td
                       colspan="8"
                       class="empty"
                     >
                       No hay apartados registrados.
                     </td>
+
                   </tr>
                 `
             }
