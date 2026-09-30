@@ -418,6 +418,7 @@ async function cargarHistorialVentas() {
     .from("ventas")
     .select(`
       id,
+      cliente_id,
       fecha,
       subtotal,
       descuento,
