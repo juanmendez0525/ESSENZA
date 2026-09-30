@@ -3065,20 +3065,19 @@ async function renderApartados() {
                             </span>
                           </td>
 
-                          <td style="position:relative;">
-
+                          <td>
   <div
     style="
       display:flex;
       align-items:center;
       justify-content:flex-end;
-      gap:6px;
-      position:relative;
+      gap:8px;
+      white-space:nowrap;
     "
   >
 
     ${
-      estado.texto === "Pendiente"
+      estado.texto !== "Entregado"
         ? `
           <button
             type="button"
@@ -3108,107 +3107,18 @@ async function renderApartados() {
     <button
       type="button"
       class="secondary-btn"
-      onclick="toggleMenuApartado('${a.id}')"
+      onclick="alert('ID: ${a.id}')"
       style="
-        min-width:38px;
-        padding:8px 10px;
+        min-width:40px;
+        padding:8px 12px;
         font-size:18px;
-        line-height:1;
       "
-      title="Más opciones"
     >
       ⋮
     </button>
 
-    <div
-      id="menuApartado-${a.id}"
-      style="
-        display:none;
-        position:absolute;
-        right:0;
-        top:calc(100% + 4px);
-        min-width:170px;
-        background:var(--card);
-        border:1px solid var(--border);
-        border-radius:10px;
-        box-shadow:0 10px 25px rgba(0,0,0,.15);
-        padding:6px;
-        z-index:1000;
-      "
-    >
-
-      ${
-        esAdmin &&
-        estado.texto !== "Entregado"
-          ? `
-            <button
-              type="button"
-              class="secondary-btn"
-              onclick="cerrarMenusApartados(); editarApartadoProductos('${a.id}')"
-              style="
-                width:100%;
-                text-align:left;
-                margin-bottom:4px;
-              "
-            >
-              ✏️ Editar
-            </button>
-          `
-          : ""
-      }
-
-      <button
-        type="button"
-        class="secondary-btn"
-        onclick="cerrarMenusApartados(); verApartado('${a.id}')"
-        style="
-          width:100%;
-          text-align:left;
-          margin-bottom:4px;
-        "
-      >
-        👁 Ver pedido
-      </button>
-
-      <button
-        type="button"
-        class="secondary-btn"
-        onclick="cerrarMenusApartados(); verAbonosApartado('${a.id}')"
-        style="
-          width:100%;
-          text-align:left;
-          margin-bottom:4px;
-        "
-      >
-        💰 Ver abonos
-      </button>
-
-      ${
-        esAdmin &&
-        estado.texto !== "Entregado"
-          ? `
-            <button
-              type="button"
-              class="secondary-btn"
-              onclick="cerrarMenusApartados(); eliminarApartado('${a.id}')"
-              style="
-                width:100%;
-                text-align:left;
-                color:#b42318;
-              "
-            >
-              🗑 Eliminar
-            </button>
-          `
-          : ""
-      }
-
-    </div>
-
   </div>
-
 </td>
-
                               <button
                                 class="secondary-btn"
                                 onclick="verApartado('${a.id}')"
