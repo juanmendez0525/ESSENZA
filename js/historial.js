@@ -424,7 +424,6 @@ async function cargarHistorialVentas() {
       total,
       metodo_pago,
       estado,
-      notas,
       usuario_id,
       descripcion_descuento,
       created_at
