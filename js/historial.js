@@ -77,7 +77,7 @@ function renderTablaHistorial(ventas, mapaUsuarios = {}) {
             const fecha = new Date(venta.fecha);
 
             const fechaTexto = fecha.toLocaleDateString("es-CO");
-            const cliente = obtenerClienteVenta(venta.notas);
+            const cliente = obtenerClienteVentaPorId(venta.cliente_id);
             const vendedor = mapaUsuarios[venta.usuario_id] || "—";
 
             return `
@@ -557,7 +557,19 @@ function obtenerClienteVenta(notas) {
 
   return notas;
 }
+function obtenerClienteVentaPorId(clienteId) {
+  if (!clienteId) {
+    return "Consumidor final";
+  }
 
+  const cliente = clientes.find(cliente => cliente.id === clienteId);
+
+  if (!cliente) {
+    return "Consumidor final";
+  }
+
+  return cliente.nombre || "Consumidor final";
+}
 
 async function verDetalleVenta(ventaId) {
 
