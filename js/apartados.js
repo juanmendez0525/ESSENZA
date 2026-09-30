@@ -2511,24 +2511,41 @@ async function registerAbono(id) {
 
     const fd =
       new FormData(e.target);
-
-    const valor =
-      Number(fd.get("valor") || 0);
-
     const fecha =
       fd.get("fecha");
 
-    if (!valor || valor <= 0) {
-      toast("Ingresa un valor válido");
-      return;
-    }
+    const inputValor = document.getElementById("abonoValor");
 
-    if (valor > saldo) {
-      toast(
-        "El abono no puede superar el saldo pendiente"
-      );
-      return;
-    }
+if (!inputValor) {
+  toast("No se encontró el campo del abono");
+  return;
+}
+
+const valorTexto = inputValor.value.trim();
+
+if (valorTexto === "") {
+  toast("Ingresa el valor del abono");
+  inputValor.focus();
+  return;
+}
+
+const valor = Number(valorTexto);
+
+const saldoActual = Number(apartado.saldo || 0);
+
+if (!Number.isFinite(valor) || valor <= 0) {
+  toast("Ingresa un valor válido");
+  inputValor.focus();
+  return;
+}
+
+if (valor > saldoActual) {
+  toast(
+    `El abono no puede superar el saldo pendiente de ${money(saldoActual)}`
+  );
+  inputValor.focus();
+  return;
+}
 
     if (!fecha) {
       toast("Selecciona la fecha del abono");
