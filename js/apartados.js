@@ -2499,15 +2499,22 @@ async function deliverApartado(id) {
     return;
   }
 
-  const { data: apartado, error: errorApartado } = await supabaseClient
-    .from("apartados")
-    .select(`
-      id,
-      saldo,
-      estado
-    `)
-    .eq("id", id)
-    .single();
+  // ==========================================
+  // OBTENER APARTADO
+  // ==========================================
+
+  const { data: apartado, error: errorApartado } =
+    await supabaseClient
+      .from("apartados")
+      .select(`
+        id,
+        cliente_id,
+        total,
+        saldo,
+        estado
+      `)
+      .eq("id", id)
+      .single();
 
   if (errorApartado || !apartado) {
     console.error("Error cargando apartado:", errorApartado);
@@ -2522,10 +2529,17 @@ async function deliverApartado(id) {
     return;
   }
 
-  if (String(apartado.estado || "").toLowerCase() === "entregado") {
+  if (
+    String(apartado.estado || "").toLowerCase() ===
+    "entregado"
+  ) {
     toast("Este apartado ya fue entregado");
     return;
   }
+
+  // ==========================================
+  // CONFIRMAR ENTREGA
+  // ==========================================
 
   const confirmar = confirm(
     "¿Confirmas que este apartado fue entregado al cliente?"
@@ -2535,21 +2549,256 @@ async function deliverApartado(id) {
     return;
   }
 
-  const { error } = await supabaseClient.rpc(
-    "entregar_apartado",
-    {
-      p_apartado_id: id
-    }
-  );
+  // ==========================================
+  // OBTENER USUARIO ACTUAL
+  // ==========================================
 
-  if (error) {
-    console.error("Error entregando apartado:", error);
-    toast(error.message || "No se pudo entregar el apartado");
+  const {
+    data: { user },
+    error: errorUsuario
+  } = await supabaseClient.auth.getUser();
+
+  if (errorUsuario || !user) {
+    console.error("Error obteniendo usuario:", errorUsuario);
+    toast("No se pudo identificar al usuario actual");
     return;
   }
 
+  // ==========================================
+  // OBTENER PRODUCTOS DEL APARTADO
+  // ==========================================
+
+  const { data: detalles, error: errorDetalles } =
+    await supabaseClient
+      .from("detalle_apartados")
+      .select(`
+        id,
+        producto_id,
+        cantidad,
+        precio_unitario
+      `)
+      .eq("apartado_id", id);
+
+  if (errorDetalles) {
+    console.error(
+      "Error cargando detalles del apartado:",
+      errorDetalles
+    );
+
+    toast("No se pudieron cargar los productos del apartado");
+    return;
+  }
+
+  if (!detalles || !detalles.length) {
+    toast("El apartado no tiene productos");
+    return;
+  }
+
+  // ==========================================
+  // OBTENER INFORMACIÓN DE LOS PRODUCTOS
+  // ==========================================
+
+  const productoIds = detalles
+    .map(detalle => detalle.producto_id)
+    .filter(Boolean);
+
+  const { data: productos, error: errorProductos } =
+    await supabaseClient
+      .from("productos")
+      .select(`
+        id,
+        nombre,
+        marca,
+        precioCompra
+      `)
+      .in("id", productoIds);
+
+  if (errorProductos) {
+    console.error(
+      "Error cargando productos:",
+      errorProductos
+    );
+
+    toast("No se pudieron cargar los productos");
+    return;
+  }
+
+  const mapaProductos = {};
+
+  (productos || []).forEach(producto => {
+    mapaProductos[producto.id] = producto;
+  });
+
+  // ==========================================
+  // CREAR ID DE LA VENTA
+  // ==========================================
+
+  const ventaId = crypto.randomUUID();
+
+  const totalVenta = Number(apartado.total || 0);
+
+  // ==========================================
+  // CREAR VENTA
+  // ==========================================
+
+  const { error: errorVenta } =
+    await supabaseClient
+      .from("ventas")
+      .insert({
+        id: ventaId,
+
+        fecha: new Date().toISOString(),
+
+        subtotal: totalVenta,
+
+        descuento: 0,
+
+        total: totalVenta,
+
+        metodo_pago: "Apartado",
+
+        estado: "completada",
+
+        notas:
+          "Venta generada por entrega de apartado " +
+          id,
+
+        usuario_id: user.id,
+
+        cliente_id: apartado.cliente_id,
+
+        descripcion_descuento: null
+      });
+
+  if (errorVenta) {
+    console.error(
+      "Error creando venta desde apartado:",
+      errorVenta
+    );
+
+    toast(
+      errorVenta.message ||
+      "No se pudo registrar la venta"
+    );
+
+    return;
+  }
+
+  // ==========================================
+  // CREAR DETALLES DE LA VENTA
+  // ==========================================
+
+  const detallesVenta = detalles.map(detalle => {
+    const producto =
+      mapaProductos[detalle.producto_id];
+
+    const cantidad =
+      Number(detalle.cantidad || 0);
+
+    const precioUnitario =
+      Number(detalle.precio_unitario || 0);
+
+    const precioCompra =
+      Number(producto?.precioCompra || 0);
+
+    return {
+      venta_id: ventaId,
+
+      producto_id:
+        detalle.producto_id || null,
+
+      producto_nombre:
+        producto?.nombre || "Producto",
+
+      producto_marca:
+        producto?.marca || "",
+
+      cantidad,
+
+      precio_unitario:
+        precioUnitario,
+
+      precio_compra:
+        precioCompra,
+
+      subtotal:
+        precioUnitario * cantidad
+    };
+  });
+
+  const {
+    error: errorDetallesVenta
+  } = await supabaseClient
+    .from("venta_detalles")
+    .insert(detallesVenta);
+
+  if (errorDetallesVenta) {
+    console.error(
+      "Error creando detalles de venta:",
+      errorDetallesVenta
+    );
+
+    // Eliminar la venta incompleta
+    await supabaseClient
+      .from("ventas")
+      .delete()
+      .eq("id", ventaId);
+
+    toast(
+      errorDetallesVenta.message ||
+      "No se pudieron registrar los productos de la venta"
+    );
+
+    return;
+  }
+
+  // ==========================================
+  // MARCAR APARTADO COMO ENTREGADO
+  // ==========================================
+
+  const { error: errorEntrega } =
+    await supabaseClient.rpc(
+      "entregar_apartado",
+      {
+        p_apartado_id: id
+      }
+    );
+
+  if (errorEntrega) {
+    console.error(
+      "Error entregando apartado:",
+      errorEntrega
+    );
+
+    // Si la entrega falló, eliminamos la venta
+    // que acabamos de crear.
+    await supabaseClient
+      .from("venta_detalles")
+      .delete()
+      .eq("venta_id", ventaId);
+
+    await supabaseClient
+      .from("ventas")
+      .delete()
+      .eq("id", ventaId);
+
+    toast(
+      errorEntrega.message ||
+      "No se pudo entregar el apartado"
+    );
+
+    return;
+  }
+
+  // ==========================================
+  // ACTUALIZAR VISTA
+  // ==========================================
+
   await renderView("apartados");
-  toast("Apartado entregado correctamente");
+
+  toast(
+    "Apartado entregado y registrado como venta correctamente"
+  );
 }
 async function renderApartados() {
   const cargado = await cargarApartadosSupabase();
