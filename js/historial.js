@@ -397,61 +397,7 @@ async function eliminarVenta(ventaId) {
     "El stock de los productos fue restaurado."
   );
 }
-async function eliminarVenta(ventaId) {
 
-  const usuario = window.usuarioActual;
-
-  if (!usuario?.email) {
-    alert("No se pudo identificar la cuenta actualmente iniciada.");
-    return;
-  }
-
-  const password = prompt(
-    "🔐 Para eliminar esta venta, ingresa la contraseña de tu cuenta:"
-  );
-
-  if (password === null) {
-    return;
-  }
-
-  if (!password.trim()) {
-    alert("Debes ingresar la contraseña.");
-    return;
-  }
-
-  const { error: errorLogin } =
-    await supabaseClient.auth.signInWithPassword({
-      email: usuario.email,
-      password: password
-    });
-
-  if (errorLogin) {
-
-    console.error(
-      "Error verificando contraseña:",
-      errorLogin
-    );
-
-    alert(
-      "Contraseña incorrecta. La venta no fue eliminada."
-    );
-
-    return;
-  }
-
-  const confirmar = confirm(
-    "⚠️ La contraseña fue verificada correctamente.\n\n" +
-    "¿Estás seguro de que deseas eliminar esta venta?"
-  );
-
-  if (!confirmar) {
-    return;
-  }
-
-  alert(
-    "Contraseña correcta. La eliminación se realizará en el siguiente paso."
-  );
-}
 
 async function cargarHistorialVentas() {
   
