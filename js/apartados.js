@@ -2380,65 +2380,107 @@ async function abrirModalNuevoApartadoSupabase(
 
 }
 async function registerAbono(id) {
+
   if (!id) {
     toast("Apartado no válido");
     return;
   }
 
-  const { data: apartado, error } = await supabaseClient
-    .from("apartados")
-    .select(`
-      id,
-      total,
-      total_abonado,
-      saldo,
-      estado
-    `)
-    .eq("id", id)
-    .single();
+  const { data: apartado, error: errorApartado } =
+    await supabaseClient
+      .from("apartados")
+      .select(`
+        id,
+        total,
+        total_abonado,
+        saldo,
+        estado
+      `)
+      .eq("id", id)
+      .single();
 
-  if (error || !apartado) {
-    console.error("Error cargando apartado para abono:", error);
-    toast("No se pudo cargar el apartado");
+  if (errorApartado || !apartado) {
+    console.error(
+      "Error cargando apartado:",
+      errorApartado
+    );
+
+    toast("Apartado no encontrado");
     return;
   }
 
-  const saldo = Number(apartado.saldo || 0);
+  const saldo = Number(
+    apartado.saldo || 0
+  );
 
   if (saldo <= 0) {
-    toast("Este apartado ya está pagado");
+    toast("Este apartado ya está completamente pagado");
     return;
   }
+
+  const fechaHoy =
+    new Date().toISOString().slice(0, 10);
 
   openModal(
     "Registrar abono",
     `
-      <form id="abonoForm">
-        <div class="form-grid">
-          <div class="field">
-            <label>Saldo pendiente</label>
-            <input
-              type="text"
-              value="${money(saldo)}"
-              readonly
-            >
-          </div>
+      <div
+        class="card"
+        style="
+          box-shadow:none;
+          background:var(--soft);
+        "
+      >
 
-          <div class="field">
-            <label>Valor del abono</label>
-            <input
-              type="number"
-              name="valor"
-              min="0.01"
-              max="${saldo}"
-              step="0.01"
-              required
-              autofocus
-            >
-          </div>
+        <div class="small">
+          Saldo pendiente
+        </div>
+
+        <div class="kpi">
+          ${money(saldo)}
+        </div>
+
+      </div>
+
+      <form id="abonoForm" class="mt">
+
+        <div class="field">
+
+          <label>
+            Valor del abono
+          </label>
+
+          <input
+            class="input"
+            name="valor"
+            type="number"
+            min="1"
+            max="${saldo}"
+            step="0.01"
+            value="${saldo}"
+            required
+          >
+
+        </div>
+
+        <div class="field mt">
+
+          <label>
+            Fecha del abono
+          </label>
+
+          <input
+            class="input"
+            name="fecha"
+            type="date"
+            value="${fechaHoy}"
+            required
+          >
+
         </div>
 
         <div class="modal-actions mt">
+
           <button
             type="button"
             class="secondary-btn"
@@ -2453,44 +2495,161 @@ async function registerAbono(id) {
           >
             Registrar abono
           </button>
+
         </div>
+
       </form>
     `
   );
 
-  document.getElementById("abonoForm").onsubmit = async event => {
-    event.preventDefault();
+  document.getElementById(
+    "abonoForm"
+  ).onsubmit = async e => {
 
-    const formData = new FormData(event.target);
-    const valor = Number(formData.get("valor") || 0);
+    e.preventDefault();
 
-    if (!Number.isFinite(valor) || valor <= 0) {
+    const fd =
+      new FormData(e.target);
+
+    const valor =
+      Number(fd.get("valor") || 0);
+
+    const fecha =
+      fd.get("fecha");
+
+    if (!valor || valor <= 0) {
       toast("Ingresa un valor válido");
       return;
     }
 
     if (valor > saldo) {
-      toast("El abono no puede superar el saldo pendiente");
+      toast(
+        "El abono no puede superar el saldo pendiente"
+      );
       return;
     }
 
-    const { error: errorAbono } = await supabaseClient.rpc(
-      "registrar_abono_apartado",
-      {
-        p_apartado_id: id,
-        p_abono: valor
-      }
-    );
+    if (!fecha) {
+      toast("Selecciona la fecha del abono");
+      return;
+    }
+
+    const user =
+      window.usuarioActual;
+
+    if (!user?.id) {
+      toast(
+        "No se pudo identificar el usuario actual"
+      );
+      return;
+    }
+
+    // =========================
+    // REGISTRAR ABONO
+    // =========================
+
+    const {
+      error: errorAbono
+    } = await supabaseClient
+      .from("abonos")
+      .insert({
+        apartado_id: id,
+        valor: valor,
+        fecha: fecha,
+        usuario_id: user.id
+      });
 
     if (errorAbono) {
-      console.error("Error registrando abono:", errorAbono);
-      toast(errorAbono.message || "No se pudo registrar el abono");
+
+      console.error(
+        "Error registrando abono:",
+        errorAbono
+      );
+
+      alert(
+        "ERROR AL REGISTRAR ABONO:\n\n" +
+        "Código: " +
+        (errorAbono.code || "") +
+        "\n\nMensaje: " +
+        (errorAbono.message || "") +
+        "\n\nDetalles: " +
+        (errorAbono.details || "") +
+        "\n\nHint: " +
+        (errorAbono.hint || "")
+      );
+
+      return;
+    }
+
+    // =========================
+    // ACTUALIZAR APARTADO
+    // =========================
+
+    const nuevoTotalAbonado =
+      Number(apartado.total_abonado || 0) +
+      valor;
+
+    const nuevoSaldo =
+      Math.max(
+        0,
+        Number(apartado.total || 0) -
+        nuevoTotalAbonado
+      );
+
+    const nuevoEstado =
+      nuevoSaldo <= 0
+        ? "pagado"
+        : "activo";
+
+    const {
+      error: errorActualizacion
+    } = await supabaseClient
+      .from("apartados")
+      .update({
+        total_abonado:
+          nuevoTotalAbonado,
+
+        saldo:
+          nuevoSaldo,
+
+        estado:
+          nuevoEstado
+      })
+      .eq("id", id);
+
+    if (errorActualizacion) {
+
+      console.error(
+        "Error actualizando apartado:",
+        errorActualizacion
+      );
+
+      // Intentar eliminar el abono para
+      // no dejar un registro inconsistente.
+      await supabaseClient
+        .from("abonos")
+        .delete()
+        .eq("apartado_id", id)
+        .eq("valor", valor)
+        .eq("fecha", fecha)
+        .eq("usuario_id", user.id);
+
+      toast(
+        "No se pudo actualizar el saldo del apartado"
+      );
+
       return;
     }
 
     closeModal();
+
     await renderView("apartados");
-    toast("Abono registrado correctamente");
+
+    toast(
+      nuevoSaldo <= 0
+        ? "Abono registrado. Apartado pagado."
+        : "Abono registrado correctamente"
+    );
   };
 }
 async function deliverApartado(id) {
