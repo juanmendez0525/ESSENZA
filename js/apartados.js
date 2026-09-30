@@ -2540,32 +2540,14 @@ async function deliverApartado(id) {
 
   // 2. Obtener el cliente
   // Si el apartado no tiene cliente, usar "Consumidor final"
-  let clienteId = apartado.cliente_id || null;
+  
 
-  if (!clienteId) {
-    const { data: consumidorFinal, error: errorCliente } =
-      await supabaseClient
-        .from("clientes")
-        .select("id, nombre")
-        .ilike("nombre", "Consumidor final")
-        .eq("activo", true)
-        .limit(1)
-        .maybeSingle();
+let clienteId = apartado.cliente_id || null;
 
-    if (errorCliente) {
-      console.error("Error buscando Consumidor final:", errorCliente);
-      toast("No fue posible obtener el cliente Consumidor final");
-      return;
-    }
-
-    if (!consumidorFinal) {
-      toast("No existe el cliente 'Consumidor final'");
-      return;
-    }
-
-    clienteId = consumidorFinal.id;
-  }
-
+// Si el apartado no tiene cliente, asignar Consumidor final
+if (!clienteId) {
+  clienteId = "5835c8f3-4830-4e01-b83b-e45e4450900b";
+}
   // 3. Obtener usuario actual
   const user = window.usuarioActual;
 
