@@ -1144,7 +1144,7 @@ function showReceipt(sale) {
           <div>
 
             <div class="brand-title">
-              ESSENZA
+              Lim cosmetic
             </div>
 
             <div class="brand-subtitle">
@@ -1157,7 +1157,7 @@ function showReceipt(sale) {
 
             <img
               src="recursos/logo.png"
-              alt="Logo ESSENZA MAKEUP"
+              alt="Logo Lim cosmetic "
               class="logo-img"
             >
 
