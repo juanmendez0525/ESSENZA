@@ -152,6 +152,11 @@ async function cargarClientesApartados() {
   return data || [];
 }
 async function verApartado(id) {
+
+  // ==========================================
+  // CARGAR APARTADO
+  // ==========================================
+
   const { data: apartado, error: errorApartado } =
     await supabaseClient
       .from("apartados")
@@ -171,10 +176,19 @@ async function verApartado(id) {
       .single();
 
   if (errorApartado || !apartado) {
-    console.error("Error cargando apartado:", errorApartado);
+    console.error(
+      "Error cargando apartado:",
+      errorApartado
+    );
+
     toast("Apartado no encontrado");
     return;
   }
+
+
+  // ==========================================
+  // CARGAR DETALLES
+  // ==========================================
 
   const { data: detalles, error: errorDetalles } =
     await supabaseClient
@@ -190,13 +204,31 @@ async function verApartado(id) {
       .eq("apartado_id", id);
 
   if (errorDetalles) {
-    console.error("Error cargando productos del apartado:", errorDetalles);
-    toast("No se pudieron cargar los productos del pedido");
+    console.error(
+      "Error cargando productos del apartado:",
+      errorDetalles
+    );
+
+    toast(
+      "No se pudieron cargar los productos del pedido"
+    );
+
     return;
   }
 
-  const { data: cliente, error: errorCliente } =
-    await supabaseClient
+
+  // ==========================================
+  // CARGAR CLIENTE
+  // ==========================================
+
+  let cliente = null;
+
+  if (apartado.cliente_id) {
+
+    const {
+      data,
+      error: errorCliente
+    } = await supabaseClient
       .from("clientes")
       .select(`
         id,
@@ -210,9 +242,20 @@ async function verApartado(id) {
       .eq("id", apartado.cliente_id)
       .maybeSingle();
 
-  if (errorCliente) {
-    console.error("Error cargando cliente:", errorCliente);
+    if (errorCliente) {
+      console.error(
+        "Error cargando cliente:",
+        errorCliente
+      );
+    }
+
+    cliente = data || null;
   }
+
+
+  // ==========================================
+  // CARGAR PRODUCTOS
+  // ==========================================
 
   const productoIds = (detalles || [])
     .map(item => item.producto_id)
@@ -221,7 +264,11 @@ async function verApartado(id) {
   let productos = [];
 
   if (productoIds.length) {
-    const { data, error } = await supabaseClient
+
+    const {
+      data,
+      error
+    } = await supabaseClient
       .from("productos")
       .select(`
         id,
@@ -232,11 +279,18 @@ async function verApartado(id) {
       .in("id", productoIds);
 
     if (error) {
-      console.error("Error cargando productos:", error);
+
+      console.error(
+        "Error cargando productos:",
+        error
+      );
+
     } else {
+
       productos = data || [];
     }
   }
+
 
   const mapaProductos = Object.fromEntries(
     productos.map(producto => [
@@ -245,120 +299,300 @@ async function verApartado(id) {
     ])
   );
 
+
+  // ==========================================
+  // ESTADO
+  // ==========================================
+
   const estadoValor =
-    String(apartado.estado || "").toLowerCase();
+    String(
+      apartado.estado || ""
+    ).toLowerCase();
 
   let estadoTexto = "Pendiente";
   let estadoClase = "warning";
 
   if (estadoValor === "pagado") {
+
     estadoTexto = "Pagado";
     estadoClase = "info";
+
+  }
+
+  if (estadoValor === "atrasado") {
+
+    estadoTexto = "Atrasado";
+    estadoClase = "danger";
+
   }
 
   if (estadoValor === "entregado") {
+
     estadoTexto = "Entregado";
     estadoClase = "success";
+
   }
 
-  const productosHTML = (detalles || [])
-    .map(item => {
-      const producto =
-        mapaProductos[item.producto_id];
 
-      const nombre =
-        producto?.nombre || "Producto";
+  // ==========================================
+  // FECHAS
+  // ==========================================
 
-      const marca =
-        producto?.marca || "";
+  const fechaApartado =
+    apartado.fecha
+      ? new Date(apartado.fecha)
+      : new Date();
 
-      const referencia =
-        producto?.referencia || "";
+  const fecha =
+    fechaApartado.toLocaleDateString(
+      "es-CO"
+    );
 
-      return `
-        <div
-          class="list-item"
-          style="align-items:flex-start;gap:16px"
-        >
+  const hora =
+    fechaApartado.toLocaleTimeString(
+      "es-CO",
+      {
+        hour: "2-digit",
+        minute: "2-digit"
+      }
+    );
 
-          <div style="flex:1">
 
-            <b>${nombre}</b>
+  const fechaLimite =
+    apartado.fecha_limite
+      ? new Date(
+          apartado.fecha_limite + "T00:00:00"
+        ).toLocaleDateString("es-CO")
+      : "—";
 
-            ${
-              marca
-                ? `<div class="small">${marca}</div>`
-                : ""
-            }
 
-            ${
-              referencia
-                ? `<div class="small">
-                    Ref: ${referencia}
-                  </div>`
-                : ""
-            }
+  // ==========================================
+  // FILAS DE PRODUCTOS
+  // ==========================================
 
-            <div class="small">
-              Cantidad:
-              ${Number(item.cantidad || 0)}
-            </div>
+  const filasProductos =
+    (detalles || [])
+      .map((item, index) => {
 
-            <div class="small">
-              Precio unitario:
-              ${money(item.precio_unitario)}
-            </div>
+        const producto =
+          mapaProductos[item.producto_id];
 
-          </div>
+        const nombre =
+          producto?.nombre ||
+          "Producto";
 
-          <div style="text-align:right">
-            <b>
-              ${money(item.subtotal)}
-            </b>
-          </div>
+        const marca =
+          producto?.marca ||
+          "";
 
-        </div>
-      `;
-    })
-    .join("");
+        const referencia =
+          producto?.referencia ||
+          "";
+
+        const descripcion =
+          [
+            nombre,
+            marca,
+            referencia
+          ]
+            .filter(Boolean)
+            .join(" · ");
+
+        const cantidad =
+          Number(item.cantidad || 0);
+
+        const precioUnitario =
+          Number(
+            item.precio_unitario || 0
+          );
+
+        const subtotal =
+          Number(item.subtotal || 0);
+
+        return `
+          <tr>
+
+            <td>
+              ${index + 1}
+            </td>
+
+            <td class="desc">
+              ${descripcion}
+            </td>
+
+            <td>
+              ${cantidad}
+            </td>
+
+            <td>
+              ${money(precioUnitario)}
+            </td>
+
+            <td>
+              ${money(subtotal)}
+            </td>
+
+          </tr>
+        `;
+
+      })
+      .join("");
+
+
+  // ==========================================
+  // INFORMACIÓN DEL CLIENTE
+  // ==========================================
+
+  const nombreCliente =
+    cliente?.nombre ||
+    "Consumidor final";
+
+  const telefonoCliente =
+    cliente?.telefono ||
+    "—";
+
+  const direccionCliente =
+    cliente?.direccion ||
+    "—";
+
+
+  // ==========================================
+  // BOTÓN EDITAR
+  // ==========================================
 
   const esAdmin =
-    window.perfilActual?.rol === "administrador";
+    window.perfilActual?.rol ===
+    "administrador";
+
+
+  const botonEditar =
+    esAdmin &&
+    estadoValor !== "entregado"
+      ? `
+        <button
+          type="button"
+          class="secondary-btn"
+          onclick="
+            closeModal();
+            editarApartadoProductos('${apartado.id}');
+          "
+        >
+          ✏️ Editar productos
+        </button>
+      `
+      : "";
+
+
+  // ==========================================
+  // MOSTRAR FACTURA
+  // ==========================================
 
   openModal(
-    "Detalle del pedido",
-    `
-      <div class="card" style="box-shadow:none;background:var(--soft)">
+    `Pedido #${String(apartado.id).slice(0, 8)}`,
 
-        <div class="section-head">
+    `
+
+    <div class="receipt-wrapper">
+
+      <div
+        id="receipt"
+        class="invoice-card"
+      >
+
+        <!-- ENCABEZADO -->
+
+        <div class="invoice-header">
 
           <div>
 
-            <h3>
-              Pedido #${String(apartado.id).slice(0, 8)}
-            </h3>
-
-            <div class="small">
-              Creado:
-              ${
-                apartado.fecha
-                  ? new Date(apartado.fecha).toLocaleString("es-CO")
-                  : "—"
-              }
+            <div class="brand-title">
+              Lim cosmetic
             </div>
 
-            ${
-              apartado.fecha_limite
-                ? `
-                  <div class="small">
-                    Fecha límite:
-                    ${apartado.fecha_limite}
-                  </div>
-                `
-                : ""
-            }
+            <div class="brand-subtitle">
+              -MAKEUP-
+            </div>
 
           </div>
+
+
+          <div class="logo-container">
+
+            <img
+              src="recursos/logo.png"
+              alt="Logo Lim cosmetic"
+              class="logo-img"
+            >
+
+          </div>
+
+        </div>
+
+
+        <!-- INFORMACIÓN -->
+
+        <div class="info-section">
+
+          <div class="client-info">
+
+            <h3>
+              INF. CLIENTE:
+            </h3>
+
+            <p>
+              Nombre:
+              ${nombreCliente}
+            </p>
+
+            <p>
+              Contacto:
+              ${telefonoCliente}
+            </p>
+
+            <p>
+              Dirección:
+              ${direccionCliente}
+            </p>
+
+          </div>
+
+
+          <div class="receipt-info">
+
+            <p>
+              Comprobante:
+              ${apartado.id}
+            </p>
+
+            <p>
+              Fecha:
+              ${fecha}
+            </p>
+
+            <p>
+              Hora:
+              ${hora}
+            </p>
+
+            <p>
+              Fecha límite:
+              ${fechaLimite}
+            </p>
+
+          </div>
+
+        </div>
+
+
+        <!-- ESTADO DEL APARTADO -->
+
+        <div
+          style="
+            display:flex;
+            justify-content:flex-end;
+            margin-bottom:20px;
+          "
+        >
 
           <span class="badge ${estadoClase}">
             ${estadoTexto}
@@ -366,186 +600,163 @@ async function verApartado(id) {
 
         </div>
 
-      </div>
+
+        <!-- TABLA DE PRODUCTOS -->
+
+        <table class="invoice-table">
+
+          <thead>
+
+            <tr>
+
+              <th style="width:10%;">
+                Item
+              </th>
+
+              <th style="width:38%;">
+                Descripción
+              </th>
+
+              <th style="width:12%;">
+                Unidad
+              </th>
+
+              <th style="width:20%;">
+                Precio unitario
+              </th>
+
+              <th style="width:20%;">
+                Total
+              </th>
+
+            </tr>
+
+          </thead>
 
 
-      <div class="card mt" style="box-shadow:none">
+          <tbody>
 
-        <div class="section-head">
-
-          <div>
-
-            <h3>Cliente</h3>
-
-          </div>
-
-        </div>
-
-        <div>
-
-          <b>
-            ${cliente?.nombre || "Consumidor final"}
-          </b>
-
-          ${
-            cliente?.identificacion
-              ? `
-                <div class="small mt">
-                  Identificación:
-                  ${cliente.identificacion}
-                </div>
+            ${
+              filasProductos ||
               `
-              : ""
-          }
-
-          ${
-            cliente?.telefono
-              ? `
-                <div class="small">
-                  Teléfono:
-                  ${cliente.telefono}
-                </div>
+                <tr>
+                  <td
+                    colspan="5"
+                    class="empty"
+                  >
+                    No hay productos registrados.
+                  </td>
+                </tr>
               `
-              : ""
-          }
-
-          ${
-            cliente?.email
-              ? `
-                <div class="small">
-                  Correo:
-                  ${cliente.email}
-                </div>
-              `
-              : ""
-          }
-
-          ${
-            cliente?.direccion
-              ? `
-                <div class="small">
-                  Dirección:
-                  ${cliente.direccion}
-                </div>
-              `
-              : ""
-          }
-
-        </div>
-
-      </div>
+            }
 
 
-      <div class="card mt" style="box-shadow:none">
+            <tr class="empty-row">
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+            </tr>
 
-        <div class="section-head">
+          </tbody>
 
-          <div>
+        </table>
 
-            <h3>Productos</h3>
+
+        <!-- PARTE INFERIOR -->
+
+        <div class="footer-section">
+
+
+          <div class="observaciones">
+
+            <h4>
+              Observaciones
+            </h4>
 
             <p>
-              Productos incluidos en este pedido.
+              Apartado
             </p>
+
+            ${
+              apartado.notas
+                ? `
+                  <p>
+                    ${apartado.notas}
+                  </p>
+                `
+                : ""
+            }
+
+            <div class="check-icon">
+              ✓
+            </div>
+
+          </div>
+
+
+          <div class="totals">
+
+            <div class="subtotal">
+
+              Sub Total:
+              ${money(apartado.total)}
+
+            </div>
+
+
+            <div class="subtotal">
+
+              Abonado:
+              ${money(apartado.total_abonado)}
+
+            </div>
+
+
+            <div class="subtotal">
+
+              Saldo pendiente:
+              ${money(apartado.saldo)}
+
+            </div>
+
+
+            <div class="total-border">
+
+              Total:
+              ${money(apartado.total)}
+
+            </div>
 
           </div>
 
         </div>
 
-        <div class="list">
 
-          ${
-            productosHTML ||
-            `
-              <div class="empty">
-                No hay productos registrados.
-              </div>
-            `
-          }
+        <!-- AGRADECIMIENTO -->
 
+        <div class="thank-you">
+          Thank You
         </div>
 
       </div>
 
 
-      <div
-        class="card mt"
-        style="box-shadow:none;background:var(--soft)"
-      >
-
-        <div class="row space">
-
-          <span>Total</span>
-
-          <b>
-            ${money(apartado.total)}
-          </b>
-
-        </div>
-
-        <div class="row space mt">
-
-          <span>Abonado</span>
-
-          <b>
-            ${money(apartado.total_abonado)}
-          </b>
-
-        </div>
-
-        <div class="row space mt">
-
-          <span>Saldo pendiente</span>
-
-          <b>
-            ${money(apartado.saldo)}
-          </b>
-
-        </div>
-
-      </div>
-
-
-      ${
-        apartado.notas
-          ? `
-            <div class="card mt" style="box-shadow:none">
-
-              <div class="section-head">
-                <div>
-                  <h3>Notas</h3>
-                </div>
-              </div>
-
-              <div class="small">
-                ${apartado.notas}
-              </div>
-
-            </div>
-          `
-          : ""
-      }
-
+      <!-- BOTONES -->
 
       <div class="modal-actions">
 
-        ${
-          esAdmin &&
-          estadoValor !== "entregado"
-            ? `
-              <button
-                type="button"
-                class="secondary-btn"
-                onclick="editarApartadoProductos('${apartado.id}')"
-              >
-                ✏️ Editar productos
-              </button>
-            `
-            : ""
-        }
+        ${botonEditar}
 
         <button
-          type="button"
+          class="secondary-btn"
+          onclick="window.print()"
+        >
+          🖨 Imprimir
+        </button>
+
+        <button
           class="primary-btn"
           onclick="closeModal()"
         >
@@ -553,6 +764,9 @@ async function verApartado(id) {
         </button>
 
       </div>
+
+    </div>
+
     `
   );
 }
