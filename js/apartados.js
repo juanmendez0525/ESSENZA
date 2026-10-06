@@ -510,7 +510,7 @@ async function verApartado(id) {
             </div>
 
             <div class="brand-subtitle">
-              -MAKEUP-
+              -TU BELLEZA, NUESTRO PROPÓSITO-
             </div>
 
           </div>
