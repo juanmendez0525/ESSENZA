@@ -527,14 +527,14 @@ async function renderInicio() {
         </div>
 
         <div class="stat-value">
-          ${DB.productos.reduce(
+          ${productos.reduce(
             (s, p) => s + Number(p.stock || 0),
             0
           )}
         </div>
 
         <div class="stat-extra">
-          ${DB.productos.length} referencias
+          ${productos.length} referencias
         </div>
 
       </div>
@@ -559,9 +559,7 @@ async function renderInicio() {
           ${money(
             pending.reduce(
               (s, a) =>
-                s +
-                Number(a.total || 0) -
-                Number(a.abonado || 0),
+                s + Number(a.saldo || 0),
               0
             )
           )}
