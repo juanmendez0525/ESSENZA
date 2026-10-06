@@ -506,7 +506,7 @@ async function verApartado(id) {
           <div>
 
             <div class="brand-title">
-              Lim cosmetic
+              LIM COSMETIC
             </div>
 
             <div class="brand-subtitle">
@@ -520,7 +520,7 @@ async function verApartado(id) {
 
             <img
               src="recursos/logo.png"
-              alt="Logo Lim cosmetic"
+              alt="Logo LIM COSMETIC"
               class="logo-img"
             >
 
