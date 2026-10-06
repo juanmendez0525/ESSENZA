@@ -4,7 +4,9 @@ let detallesApartadosSupabase = [];
 function getClient(id){
   return DB.clientes.find(c => String(c.id) === String(id));
 }
+
 async function cargarApartadosSupabase() {
+
   const { data: apartados, error: errorApartados } =
     await supabaseClient
       .from("apartados")
@@ -28,26 +30,98 @@ async function cargarApartadosSupabase() {
     return false;
   }
 
+  // ==========================================
+  // MARCAR APARTADOS VENCIDOS
+  // ==========================================
+
+  const hoy = new Date();
+  hoy.setHours(0, 0, 0, 0);
+
+  for (const apartado of apartados || []) {
+
+    const estado = String(
+      apartado.estado || ""
+    ).toLowerCase();
+
+    const saldo = Number(
+      apartado.saldo || 0
+    );
+
+    if (
+      apartado.fecha_limite &&
+      saldo > 0 &&
+      estado !== "entregado" &&
+      estado !== "pagado" &&
+      estado !== "atrasado"
+    ) {
+
+      const fechaLimite = new Date(
+        apartado.fecha_limite + "T00:00:00"
+      );
+
+      fechaLimite.setHours(0, 0, 0, 0);
+
+      if (fechaLimite < hoy) {
+
+        const { error: errorAtrasado } =
+          await supabaseClient
+            .from("apartados")
+            .update({
+              estado: "atrasado"
+            })
+            .eq("id", apartado.id);
+
+        if (errorAtrasado) {
+
+          console.error(
+            "Error marcando apartado como atrasado:",
+            errorAtrasado
+          );
+
+        } else {
+
+          // Actualizar también el objeto local
+          // para que se vea inmediatamente
+          apartado.estado = "atrasado";
+        }
+      }
+    }
+  }
+
+  // ==========================================
+  // CARGAR DETALLES
+  // ==========================================
+
   const ids = (apartados || []).map(a => a.id);
 
   let detalles = [];
 
   if (ids.length) {
-    const { data, error } = await supabaseClient
-      .from("detalle_apartados")
-      .select(`
-        id,
-        apartado_id,
-        producto_id,
-        cantidad,
-        precio_unitario,
-        subtotal
-      `)
-      .in("apartado_id", ids);
+
+    const { data, error } =
+      await supabaseClient
+        .from("detalle_apartados")
+        .select(`
+          id,
+          apartado_id,
+          producto_id,
+          cantidad,
+          precio_unitario,
+          subtotal
+        `)
+        .in("apartado_id", ids);
 
     if (error) {
-      console.error("Error cargando detalles:", error);
-      toast("No se pudieron cargar los productos de los apartados");
+
+      console.error(
+        "Error cargando detalles:",
+        error
+      );
+
+      toast(
+        "No se pudieron cargar los productos de los apartados"
+      );
+
       return false;
     }
 
@@ -2394,7 +2468,8 @@ async function registerAbono(id) {
         total,
         total_abonado,
         saldo,
-        estado
+        estado,
+        fecha_limite
       `)
       .eq("id", id)
       .single();
@@ -2614,10 +2689,30 @@ if (valor > saldoActual) {
         nuevoTotalAbonado
       );
 
-    const nuevoEstado =
-      nuevoSaldo <= 0
-        ? "pagado"
-        : "activo";
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+        
+    let estaAtrasado = false;
+        
+    if (apartado.fecha_limite) {
+    
+      const fechaLimite = new Date(
+        apartado.fecha_limite + "T00:00:00"
+      );
+    
+      fechaLimite.setHours(0, 0, 0, 0);
+    
+      estaAtrasado =
+        fechaLimite < hoy &&
+        nuevoSaldo > 0;
+    }
+
+const nuevoEstado =
+  nuevoSaldo <= 0
+    ? "pagado"
+    : estaAtrasado
+      ? "atrasado"
+      : "activo";
 
     const {
       error: errorActualizacion
@@ -2648,7 +2743,7 @@ if (valor > saldoActual) {
         .from("abonos")
         .delete()
         .eq("apartado_id", id)
-        .eq("valor", valor)
+        .eq("monto", valor)
         .eq("fecha", fecha)
         .eq("usuario_id", user.id);
 
@@ -2924,6 +3019,13 @@ async function renderApartados() {
       return {
         texto: "Pagado",
         clase: "info"
+      };
+    }
+
+    if (valor === "atrasado") {
+      return {    
+        texto: "Atrasado",
+        clase: "danger"
       };
     }
 
