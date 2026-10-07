@@ -180,160 +180,32 @@ function configurarMenuPorRol() {
 
 }
 
-async function cargarResumenInicio() {
-
-  const hoy = new Date();
-
-  const inicioHoy = new Date(hoy);
-  inicioHoy.setHours(0, 0, 0, 0);
-
-  const finHoy = new Date(hoy);
-  finHoy.setHours(23, 59, 59, 999);
-
-  const { data: ventasHoy, error: errorVentas } =
-    await supabaseClient
-      .from("ventas")
-      .select(`
-        id,
-        cliente_id,
-        fecha,
-        total,
-        metodo_pago,
-        estado
-      `)
-      .gte("fecha", inicioHoy.toISOString())
-      .lte("fecha", finHoy.toISOString())
-      .order("fecha", { ascending: false });
-
-  if (errorVentas) {
-    console.error(
-      "Error cargando ventas del inicio:",
-      errorVentas
-    );
-  }
-
-  const { data: productos, error: errorProductos } =
-    await supabaseClient
-      .from("productos")
-      .select(`
-        id,
-        nombre,
-        stock,
-        stockMinimo,
-        activo
-      `)
-      .eq("activo", true);
-
-  if (errorProductos) {
-    console.error(
-      "Error cargando productos del inicio:",
-      errorProductos
-    );
-  }
-
-  const { data: apartados, error: errorApartados } =
-    await supabaseClient
-      .from("apartados")
-      .select(`
-        id,
-        cliente_id,
-        fecha,
-        fecha_limite,
-        total,
-        total_abonado,
-        saldo,
-        estado
-      `)
-      .order("fecha", { ascending: false });
-
-  if (errorApartados) {
-    console.error(
-      "Error cargando apartados del inicio:",
-      errorApartados
-    );
-  }
-
-  const clienteIds = [
-    ...(ventasHoy || []).map(v => v.cliente_id),
-    ...(apartados || []).map(a => a.cliente_id)
-  ].filter(Boolean);
-
-  const idsUnicos = [...new Set(clienteIds)];
-
-  let clientes = [];
-
-  if (idsUnicos.length) {
-
-    const { data, error } =
-      await supabaseClient
-        .from("clientes")
-        .select(`
-          id,
-          nombre
-        `)
-        .in("id", idsUnicos);
-
-    if (error) {
-      console.error(
-        "Error cargando clientes del inicio:",
-        error
-      );
-    }
-
-    clientes = data || [];
-  }
-
-  const mapaClientes = Object.fromEntries(
-    clientes.map(cliente => [
-      cliente.id,
-      cliente
-    ])
-  );
-
-  return {
-    ventasHoy: ventasHoy || [],
-    productos: productos || [],
-    apartados: apartados || [],
-    mapaClientes
-  };
-}
-
-async function renderInicio() {
+function renderInicio() {
 
   const rol = window.perfilActual?.rol;
   const esAdmin = rol === "administrador";
 
-  const {
-    ventasHoy,
-    productos,
-    apartados,
-    mapaClientes
-  } = await cargarResumenInicio();
+  const today =
+    new Date().toISOString().slice(0, 10);
+
+  const todaySales =
+    DB.ventas.filter(v => v.fecha === today);
+
   const sales =
-    ventasHoy.reduce(
+    todaySales.reduce(
       (s, v) => s + Number(v.total || 0),
       0
     );
 
   const low =
-    productos.filter(
-      p =>
-        Number(p.stock || 0) <=
-        Number(p.stockMinimo || 0)
+    DB.productos.filter(
+      p => p.stock <= p.stockMinimo
     );
 
   const pending =
-    apartados.filter(a => {
-
-      const estado =
-        String(a.estado || "").toLowerCase();
-
-      return (
-        estado === "activo" ||
-        estado === "pendiente" ||
-        estado === "atrasado"
-      );
-    });
+    DB.apartados.filter(
+      a => a.estado === "Pendiente"
+    );
 
 
   // ==========================================
@@ -427,40 +299,27 @@ async function renderInicio() {
         <div class="list">
 
           ${
-            ventasHoy
+            DB.ventas
               .slice(0, 5)
               .map(v => `
                 <div class="list-item">
-              
+
                   <div>
-              
+
                     <b>
-                      #${v.id} · ${
-                        mapaClientes[v.cliente_id]?.nombre ||
-                        "Consumidor final"
-                      }
+                      #${v.id} · ${v.cliente}
                     </b>
-                    
+
                     <div class="small">
-                      ${
-                        new Date(v.fecha).toLocaleTimeString(
-                          "es-CO",
-                          {
-                            hour: "2-digit",
-                            minute: "2-digit"
-                          }
-                        )
-                      }
-                      ·
-                      ${v.metodo_pago || "—"}
+                      ${v.fecha} · ${v.metodo}
                     </div>
-                    
+
                   </div>
-                    
+
                   <b>
                     ${money(v.total)}
                   </b>
-                    
+
                 </div>
               `)
               .join("")
@@ -527,14 +386,14 @@ async function renderInicio() {
         </div>
 
         <div class="stat-value">
-          ${productos.reduce(
+          ${DB.productos.reduce(
             (s, p) => s + Number(p.stock || 0),
             0
           )}
         </div>
 
         <div class="stat-extra">
-          ${productos.length} referencias
+          ${DB.productos.length} referencias
         </div>
 
       </div>
@@ -559,7 +418,9 @@ async function renderInicio() {
           ${money(
             pending.reduce(
               (s, a) =>
-                s + Number(a.saldo || 0),
+                s +
+                Number(a.total || 0) -
+                Number(a.abonado || 0),
               0
             )
           )}
