@@ -4,6 +4,36 @@ let detallesApartadosSupabase = [];
 function getClient(id){
   return DB.clientes.find(c => String(c.id) === String(id));
 }
+async function eliminarApartado(id) {
+  if (window.perfilActual?.rol !== "administrador") {
+    toast("No tienes permisos para eliminar apartados");
+    return;
+  }
+
+  if (!confirm("¿Seguro que deseas eliminar este apartado? El stock será devuelto.")) {
+    return;
+  }
+
+  try {
+    const { error } = await supabaseClient.rpc("eliminar_apartado", {
+      p_apartado_id: id
+    });
+
+    if (error) {
+      console.error("Error eliminando apartado:", error);
+      toast(error.message || "No se pudo eliminar el apartado");
+      return;
+    }
+
+    await cargarApartadosSupabase();
+    renderView("apartados");
+
+    toast("Apartado eliminado y stock devuelto");
+  } catch (err) {
+    console.error("Error inesperado eliminando apartado:", err);
+    toast("Ocurrió un error al eliminar el apartado");
+  }
+}
 
 async function cargarApartadosSupabase() {
 
