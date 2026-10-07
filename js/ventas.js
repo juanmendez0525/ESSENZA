@@ -1424,7 +1424,11 @@ function renderVentas(){
           value="${q}"
         >
 
-        <div id="ventaProductos" class="product-grid mt">
+        <div
+          id="ventaProductos"
+          class="product-grid mt"
+          style="max-height: 590px; overflow-y: auto; padding-right: 6px;"
+        >
 
           ${products.map(p => `
 

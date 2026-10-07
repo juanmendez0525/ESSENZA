@@ -218,8 +218,12 @@ th,td{padding:12px 10px;border-bottom:1px solid var(--border);white-space:nowrap
   padding-right: 0;
 }
 
-.sidebar.collapsed .nav-item span {
+.sidebar.collapsed .nav-item > span:not(.nav-icon) {
   display: none;
+}
+
+.sidebar.collapsed .nav-item .nav-icon {
+  display: inline-flex;
 }
 
 .sidebar.collapsed .sidebar-footer {
