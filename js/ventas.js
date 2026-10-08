@@ -1405,7 +1405,7 @@ function renderVentas(){
   );
 
   return `
-    <div class="two-col grid">
+    <div class="two-col grid ventas-layout">
 
       <div class="card">
 
