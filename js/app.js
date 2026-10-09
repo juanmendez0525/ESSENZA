@@ -139,7 +139,9 @@ function configurarMenuPorRol() {
     return;
   }
 
+  
   const vistasAdministrativas = [
+    "inventario",
     "clientes",
     "historial",
     "reportes",
@@ -762,26 +764,6 @@ function renderConfiguracion(){
 
     </div>
 
-
-    <!-- DATOS DEL PROTOTIPO -->
-    <div class="card mt">
-
-      <h2>Datos del prototipo</h2>
-
-      <p class="small">
-        Esta versión guarda la información en el navegador
-        mediante localStorage. No es todavía una base de datos
-        Android ni facturación electrónica DIAN.
-      </p>
-
-      <button
-        class="danger-btn mt"
-        onclick="resetDemo()"
-      >
-        Restablecer datos de demostración
-      </button>
-
-    </div>
 
   `;
 }

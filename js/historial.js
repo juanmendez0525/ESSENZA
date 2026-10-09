@@ -488,8 +488,38 @@ if (usuarioIds.length > 0) {
     .select("id, nombre")
     .in("id", usuarioIds);
 
+  console.log(
+    "Usuarios de las ventas:",
+    usuarioIds
+  );
+
+  console.log(
+    "Perfiles devueltos por Supabase:",
+    (perfilesData || []).map(p => ({
+      id: p.id,
+      nombre: p.nombre
+    }))
+  );
+
+  console.log("Error al consultar perfiles:", errorPerfiles);
+  console.log("Cantidad de ventas:", ventas.length);
+  
   if (!errorPerfiles) {
     perfiles = perfilesData || [];
+    console.log(
+      "Detalle de perfiles:",
+      (perfilesData || []).map(p => ({
+        id: p.id,
+        nombre: p.nombre
+      }))
+    );
+    
+    console.log(
+      "Usuarios sin perfil visible:",
+      usuarioIds.filter(
+        id => !(perfilesData || []).some(p => p.id === id)
+      )
+    );
   }
 }
 
